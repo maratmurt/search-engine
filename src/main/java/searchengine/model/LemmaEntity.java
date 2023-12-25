@@ -9,16 +9,17 @@ import javax.persistence.*;
 @Table(name = "lemma")
 public class LemmaEntity {
     @Id
+    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.AUTO)
-    int id;
+    private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id", nullable = false)
-    SiteEntity site;
+    private SiteEntity site;
 
     @Column(columnDefinition = "varchar(255)", nullable = false)
-    String lemma;
+    private String lemma;
 
     @Column(nullable = false)
-    int frequency;
+    private Integer frequency;
 }

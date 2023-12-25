@@ -9,17 +9,18 @@ import javax.persistence.*;
 @Table(name = "indices")
 public class IndexEntity {
     @Id
+    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.AUTO)
-    int id;
+    private Integer id;
 
     @ManyToOne
     @JoinColumn(name = "page_id", nullable = false)
-    PageEntity page;
+    private PageEntity page;
 
     @ManyToOne
     @JoinColumn(name = "lemma_id", nullable = false)
-    LemmaEntity lemma;
+    private LemmaEntity lemma;
 
     @Column(columnDefinition = "float", name = "`rank`", nullable = false)
-    double rank;
+    private Double rank;
 }

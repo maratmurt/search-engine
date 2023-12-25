@@ -10,22 +10,23 @@ import java.time.LocalDateTime;
 @Table(name = "site")
 public class SiteEntity {
     @Id
+    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.AUTO)
-    int id;
+    private Integer id;
 
     @Column(columnDefinition = "enum('INDEXING', 'INDEXED', 'FAILED')")
     @Enumerated(EnumType.STRING)
-    Status status;
+    private Status status;
 
     @Column(columnDefinition = "datetime", nullable = false)
-    LocalDateTime statusTime;
+    private LocalDateTime statusTime;
 
     @Column(columnDefinition = "text")
-    String lastError;
+    private String lastError;
 
     @Column(columnDefinition = "varchar(255)", nullable = false)
-    String url;
+    private String url;
 
     @Column(columnDefinition = "varchar(255)", nullable = false)
-    String name;
+    private String name;
 }

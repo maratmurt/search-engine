@@ -10,32 +10,20 @@ import java.util.Objects;
 @Table(name = "page", indexes = @Index(columnList = "path"))
 public class PageEntity {
     @Id
+    @Column(name = "id")
     @GeneratedValue(strategy = GenerationType.AUTO)
-    int id;
+    private Integer id;
 
     @ManyToOne(fetch = FetchType.LAZY)
     @JoinColumn(name = "site_id", nullable = false)
-    SiteEntity site;
+    private SiteEntity site;
 
     @Column(columnDefinition = "varchar(255)", nullable = false)
-    String path;
+    private String path;
 
     @Column(nullable = false)
-    int code;
+    private Integer code;
 
     @Column(columnDefinition = "mediumtext", nullable = false)
-    String content;
-
-    @Override
-    public boolean equals(Object o) {
-        if (this == o) return true;
-        if (o == null || getClass() != o.getClass()) return false;
-        PageEntity page = (PageEntity) o;
-        return Objects.equals(site, page.site) && Objects.equals(path, page.path);
-    }
-
-    @Override
-    public int hashCode() {
-        return Objects.hash(site, path);
-    }
+    private String content;
 }

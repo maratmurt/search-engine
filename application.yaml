@@ -10,19 +10,19 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
     hibernate:
-      ddl-auto: validate
+      ddl-auto: create
     show-sql: false
 indexing-settings:
   sites:
-#    - url: https://lenta.ru
+#    - url: https://lenta.ru/
 #      name: Лента.ру
-#    - url: https://ipfran.ru
+#    - url: https://ipfran.ru/
 #      name: ipfran
-#    - url: https://dimonvideo.ru
+#    - url: https://dimonvideo.ru/
 #      name: dimonvideo
-    - url: https://300lux.ru
+    - url: https://300lux.ru/
       name: 300lux
-    - url: https://dress-me-up.ru
-      name: dress-me-up
-    - url: https://triko.agency
+#    - url: https://dress-me-up.ru/
+#      name: dress-me-up
+    - url: https://triko.agency/
       name: triko
