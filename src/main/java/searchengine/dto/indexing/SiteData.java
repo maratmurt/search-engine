@@ -1,16 +1,12 @@
 package searchengine.dto.indexing;
 
 import lombok.Data;
-import searchengine.model.Status;
 
-import java.time.LocalDateTime;
+import java.util.Set;
 
 @Data
 public class SiteData {
-    private Integer id;
-    private Status status;
-    private LocalDateTime statusTime;
-    private String lastError;
-    private String url;
-    private String name;
+    int siteId;
+    Set<String> paths;
+    Set<String> lemmas;
 }

@@ -1,17 +1,22 @@
 package searchengine.repositories;
 
 import org.springframework.data.jpa.repository.JpaRepository;
-import org.springframework.data.jpa.repository.Query;
 import org.springframework.stereotype.Repository;
+import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.IndexEntity;
 import searchengine.model.LemmaEntity;
 import searchengine.model.PageEntity;
+import searchengine.model.SiteEntity;
+
+import java.util.List;
 
 @Repository
 public interface IndexRepository extends JpaRepository<IndexEntity, Integer> {
-    IndexEntity findByLemmaAndPage(LemmaEntity lemma, PageEntity page);
+    @Transactional
+    void deleteAllByPage_Site(SiteEntity site);
 
-    //TODO delete all indices by site id
-//    @Query("delete from IndexEntity i where i.page.site.id = :siteId")
-    void deleteAllByPage_Site_Id(int siteId);
+    @Transactional
+    void deleteAllByPage_SiteAndPage_Path(SiteEntity site, String path);
+
+    List<IndexEntity> findAllByPage_Path(String path);
 }

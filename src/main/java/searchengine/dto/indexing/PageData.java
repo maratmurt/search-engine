@@ -2,11 +2,14 @@ package searchengine.dto.indexing;
 
 import lombok.Data;
 
+import java.util.Map;
+import java.util.Set;
+
 @Data
 public class PageData {
-    private Integer id;
-    private Integer siteId;
-    private String path;
-    private Integer code;
-    private String content;
+    int statusCode;
+    String body;
+    String text;
+    Set<String> links;
+    Map<String, Double> lemmaRanks;
 }
