@@ -2,46 +2,49 @@ package searchengine.services;
 
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
-import org.apache.lucene.morphology.LuceneMorphology;
-import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
-import org.jsoup.Connection;
-import org.jsoup.Jsoup;
+import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
-import searchengine.dto.indexing.LemmaData;
-import searchengine.dto.indexing.PageData;
 import searchengine.dto.indexing.SiteData;
 import searchengine.model.Status;
+import searchengine.utils.RecursiveIndexer;
 
-import java.io.IOException;
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
-import java.util.concurrent.ForkJoinTask;
-import java.util.concurrent.RecursiveAction;
 
 @Slf4j
 @Service
 @RequiredArgsConstructor
 public class IndexingServiceImpl implements IndexingService {
     private final SitesList sites;
+    private final ApplicationContext context;
     private final SiteCrudService siteService;
     private final PageCrudService pageService;
     private final LemmaCrudService lemmaService;
     private final IndexCrudService indexService;
+    private boolean running = false;
     private final ForkJoinPool pool = new ForkJoinPool(8);
 
     @Override
     public Object startIndexing() {
         HashMap<String, Object> response = new HashMap<>();
+        if (running) {
+            response.put("result", false);
+            response.put("error", "Индексация уже запущена");
+            return response;
+        }
 
+        running = true;
         for (Site site : sites.getSites()) {
             String name = site.getName();
             String url = site.getUrl();
 
             try {
                 int siteId = siteService.getByUrl(url).getId();
+                indexService.deleteAllBySiteId(siteId);
+                lemmaService.deleteAllBySiteId(siteId);
                 pageService.deleteAllBySiteId(siteId);
                 siteService.delete(siteId);
             } catch (NullPointerException e) {
@@ -55,14 +58,13 @@ public class IndexingServiceImpl implements IndexingService {
             siteData.setStatusTime(LocalDateTime.now());
             siteData = siteService.create(siteData);
 
-            RecursiveIndexer indexer = new RecursiveIndexer();
+            String path = "/";
+            Set<String> paths = new HashSet<>();
+            paths.add(path);
+            RecursiveIndexer indexer = context.getBean(RecursiveIndexer.class);
             indexer.setSiteId(siteData.getId());
-            indexer.setSourcePath("/");
-            indexer.setPaths(new HashSet<>());
-            indexer.setSiteService(siteService);
-            indexer.setPageService(pageService);
-            indexer.setLemmaService(lemmaService);
-            indexer.setIndexService(indexService);
+            indexer.setSourcePath(path);
+            indexer.setPaths(paths);
             pool.submit(indexer);
         }
         pool.shutdown();
@@ -73,7 +75,20 @@ public class IndexingServiceImpl implements IndexingService {
     @Override
     public Object stopIndexing() {
         HashMap<String, Object> response = new HashMap<>();
-        response.put("result", true);
+        if (running) {
+            running = false;
+            pool.shutdownNow();
+            List<SiteData> sites = siteService.getAllByStatus(Status.INDEXING);
+            for (SiteData site : sites) {
+                site.setStatus(Status.FAILED);
+                site.setStatusTime(LocalDateTime.now());
+                siteService.update(site);
+            }
+            response.put("result", true);
+        } else {
+            response.put("result", false);
+            response.put("error", "Индексация не запущена");
+        }
         return response;
     }
 

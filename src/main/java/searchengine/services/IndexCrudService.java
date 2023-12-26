@@ -11,6 +11,9 @@ import searchengine.repositories.IndexRepository;
 import searchengine.repositories.LemmaRepository;
 import searchengine.repositories.PageRepository;
 
+import java.util.ArrayList;
+import java.util.List;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -69,5 +72,9 @@ public class IndexCrudService implements CrudService<IndexData> {
         PageEntity page = pageRepository.findById(pageId).orElseThrow();
         IndexEntity index = indexRepository.findByLemmaAndPage(lemma, page);
         return mapToData(index);
+    }
+
+    public void deleteAllBySiteId(int siteId) {
+        indexRepository.deleteAllBySiteId(siteId);
     }
 }

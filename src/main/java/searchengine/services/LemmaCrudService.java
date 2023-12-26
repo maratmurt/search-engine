@@ -64,4 +64,9 @@ public class LemmaCrudService implements CrudService<LemmaData> {
         LemmaEntity entity = lemmaRepository.findByLemmaAndSite(word, site);
         return mapToData(entity);
     }
+
+    public void deleteAllBySiteId(int siteId) {
+        SiteEntity site = siteRepository.findById(siteId).orElseThrow();
+        lemmaRepository.deleteAllBySite(site);
+    }
 }

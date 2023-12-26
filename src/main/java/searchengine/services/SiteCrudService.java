@@ -5,8 +5,11 @@ import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
 import searchengine.dto.indexing.SiteData;
 import searchengine.model.SiteEntity;
+import searchengine.model.Status;
 import searchengine.repositories.SiteRepository;
 
+import java.util.ArrayList;
+import java.util.List;
 import java.util.NoSuchElementException;
 
 @Slf4j
@@ -70,5 +73,15 @@ public class SiteCrudService implements CrudService<SiteData> {
             throw new RuntimeException(e);
         }
         return mapToData(entity);
+    }
+
+    public List<SiteData> getAllByStatus(Status status) {
+        List<SiteData> dataList = new ArrayList<>();
+        List<SiteEntity> entityList = siteRepository.findAllByStatus(status);
+        for (SiteEntity entity : entityList) {
+            SiteData data = mapToData(entity);
+            dataList.add(data);
+        }
+        return dataList;
     }
 }
