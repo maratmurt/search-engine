@@ -3,6 +3,7 @@ package searchengine.services;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import searchengine.dto.indexing.PageData;
 import searchengine.dto.indexing.SiteData;
 import searchengine.model.PageEntity;
@@ -65,6 +66,7 @@ public class PageCrudService implements CrudService<PageData> {
         return entity;
     }
 
+    @Transactional
     public void deleteAllBySiteId(int siteId) {
         List<Integer> pageIds = pageRepository.findAllIdsBySiteId(siteId);
         if (!pageIds.isEmpty()) {

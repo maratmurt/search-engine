@@ -12,6 +12,6 @@ public interface IndexRepository extends JpaRepository<IndexEntity, Integer> {
     IndexEntity findByLemmaAndPage(LemmaEntity lemma, PageEntity page);
 
     //TODO delete all indices by site id
-    @Query("delete from IndexEntity i where i.page.site.id = :siteId")
-    void deleteAllBySiteId(int siteId);
+//    @Query("delete from IndexEntity i where i.page.site.id = :siteId")
+    void deleteAllByPage_Site_Id(int siteId);
 }

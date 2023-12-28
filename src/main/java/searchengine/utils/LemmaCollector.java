@@ -1,5 +1,6 @@
 package searchengine.utils;
 
+import lombok.extern.slf4j.Slf4j;
 import org.apache.lucene.morphology.LuceneMorphology;
 import org.apache.lucene.morphology.russian.RussianLuceneMorphology;
 
@@ -7,6 +8,7 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.List;
 
+@Slf4j
 public class LemmaCollector {
     public static List<String> extractLemmas(String text) throws IOException {
         List<String> lemmas = new ArrayList<>();

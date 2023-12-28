@@ -3,6 +3,7 @@ package searchengine.services;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.stereotype.Service;
+import org.springframework.transaction.annotation.Transactional;
 import searchengine.dto.indexing.IndexData;
 import searchengine.model.IndexEntity;
 import searchengine.model.LemmaEntity;
@@ -34,6 +35,7 @@ public class IndexCrudService implements CrudService<IndexData> {
         LemmaEntity lemma = lemmaRepository.findById(item.getLemmaId()).orElseThrow();
         PageEntity page = pageRepository.findById(item.getPageId()).orElseThrow();
         IndexEntity index = indexRepository.save(mapToEntity(item, lemma, page));
+        log.info(index.getLemma().getLemma());
         return mapToData(index);
     }
 
@@ -74,7 +76,8 @@ public class IndexCrudService implements CrudService<IndexData> {
         return mapToData(index);
     }
 
+    @Transactional
     public void deleteAllBySiteId(int siteId) {
-        indexRepository.deleteAllBySiteId(siteId);
+        indexRepository.deleteAllByPage_Site_Id(siteId);
     }
 }

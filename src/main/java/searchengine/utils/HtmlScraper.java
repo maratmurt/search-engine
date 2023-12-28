@@ -19,11 +19,11 @@ public class HtmlScraper {
     private int statusCode;
 
     public void initialize(String url) throws IOException, InterruptedException {
-        Thread.sleep(1000);
+        Thread.sleep(3000);
 
         log.info("CONNECTING TO " + url);
-
         Connection.Response response = Jsoup.connect(url)
+                .timeout(5000)
                 .userAgent("MySearchEngine")
                 .referrer("http://www.google.com")
                 .execute();

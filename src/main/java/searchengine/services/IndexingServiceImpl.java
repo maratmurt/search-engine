@@ -1,5 +1,6 @@
 package searchengine.services;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
@@ -9,10 +10,12 @@ import searchengine.config.SitesList;
 import searchengine.dto.indexing.SiteData;
 import searchengine.model.Status;
 import searchengine.utils.RecursiveIndexer;
+import searchengine.utils.TaskManager;
 
 import java.time.LocalDateTime;
 import java.util.*;
 import java.util.concurrent.ForkJoinPool;
+import java.util.concurrent.ForkJoinTask;
 
 @Slf4j
 @Service
@@ -24,22 +27,25 @@ public class IndexingServiceImpl implements IndexingService {
     private final PageCrudService pageService;
     private final LemmaCrudService lemmaService;
     private final IndexCrudService indexService;
-    private boolean running = false;
-    private final ForkJoinPool pool = new ForkJoinPool(8);
+    private final TaskManager taskManager;
+    private ForkJoinPool pool;
 
     @Override
     public Object startIndexing() {
         HashMap<String, Object> response = new HashMap<>();
-        if (running) {
+        if (taskManager.isIndexing()) {
             response.put("result", false);
             response.put("error", "Индексация уже запущена");
             return response;
         }
 
-        running = true;
+        taskManager.setIndexing(true);
+        pool = new ForkJoinPool(8);
+
         for (Site site : sites.getSites()) {
             String name = site.getName();
             String url = site.getUrl();
+            url += url.endsWith("/") ? "" : "/";
 
             try {
                 int siteId = siteService.getByUrl(url).getId();
@@ -48,7 +54,7 @@ public class IndexingServiceImpl implements IndexingService {
                 pageService.deleteAllBySiteId(siteId);
                 siteService.delete(siteId);
             } catch (NullPointerException e) {
-                log.info(e.getMessage());
+                log.error(e.getMessage());
             }
 
             SiteData siteData = new SiteData();
@@ -65,9 +71,12 @@ public class IndexingServiceImpl implements IndexingService {
             indexer.setSiteId(siteData.getId());
             indexer.setSourcePath(path);
             indexer.setPaths(paths);
-            pool.submit(indexer);
+            ForkJoinTask<Void> rootTask = pool.submit(indexer);
+//            taskManager.addTask(rootTask);
         }
+//        new Thread(taskManager).start();
         pool.shutdown();
+
         response.put("result", true);
         return response;
     }
@@ -75,15 +84,15 @@ public class IndexingServiceImpl implements IndexingService {
     @Override
     public Object stopIndexing() {
         HashMap<String, Object> response = new HashMap<>();
-        if (running) {
-            running = false;
+        if (taskManager.isIndexing()) {
+            taskManager.setIndexing(false);
             pool.shutdownNow();
-            List<SiteData> sites = siteService.getAllByStatus(Status.INDEXING);
-            for (SiteData site : sites) {
-                site.setStatus(Status.FAILED);
-                site.setStatusTime(LocalDateTime.now());
-                siteService.update(site);
-            }
+//            List<SiteData> sites = siteService.getAllByStatus(Status.INDEXING);
+//            for (SiteData site : sites) {
+//                site.setStatus(Status.FAILED);
+//                site.setStatusTime(LocalDateTime.now());
+//                siteService.update(site);
+//            }
             response.put("result", true);
         } else {
             response.put("result", false);

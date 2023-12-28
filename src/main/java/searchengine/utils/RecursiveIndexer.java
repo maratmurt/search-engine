@@ -11,10 +11,7 @@ import searchengine.dto.indexing.LemmaData;
 import searchengine.dto.indexing.PageData;
 import searchengine.dto.indexing.SiteData;
 import searchengine.model.Status;
-import searchengine.services.IndexCrudService;
-import searchengine.services.LemmaCrudService;
-import searchengine.services.PageCrudService;
-import searchengine.services.SiteCrudService;
+import searchengine.services.*;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
@@ -37,12 +34,16 @@ public class RecursiveIndexer extends RecursiveAction {
     private final PageCrudService pageService;
     private final LemmaCrudService lemmaService;
     private final IndexCrudService indexService;
+    private final TaskManager taskManager;
 
     @Override
     protected void compute() {
+        if (!taskManager.isIndexing()) {
+            return;
+        }
+
         SiteData site = siteService.getById(siteId);
         String url = site.getUrl() + sourcePath.substring(1);
-
         HtmlScraper scraper = new HtmlScraper();
         try {
             scraper.initialize(url);
@@ -56,12 +57,10 @@ public class RecursiveIndexer extends RecursiveAction {
         page.setCode(scraper.getStatusCode());
         page.setContent(scraper.getHtml());
         page = pageService.create(page);
+        site.setStatusTime(LocalDateTime.now());
+        siteService.update(site);
 
-        try {
-            saveLemmasAndIndices(scraper.getText(), page.getId());
-        } catch (IOException e) {
-            log.error(e.getMessage());
-        }
+        saveLemmasAndIndices(scraper.getText(), page.getId());
 
         List<RecursiveIndexer> taskList = new ArrayList<>();
         List<String> links = scraper.getLinks();
@@ -71,22 +70,18 @@ public class RecursiveIndexer extends RecursiveAction {
                 continue;
             }
             paths.add(path);
-
             RecursiveIndexer task = context.getBean(RecursiveIndexer.class);
             task.setSiteId(siteId);
             task.setSourcePath(path);
             task.setPaths(paths);
-            task.fork();
+            taskManager.addTask(task.fork());
             taskList.add(task);
         }
         taskList.forEach(ForkJoinTask::join);
-
         log.info(url + " DONE");
 
         if (sourcePath.equals("/")) {
-            site.setStatus(Status.INDEXED);
-            site.setStatusTime(LocalDateTime.now());
-            siteService.update(site);
+            saveFinalStatus(site);
         }
     }
 
@@ -108,8 +103,14 @@ public class RecursiveIndexer extends RecursiveAction {
         return path;
     }
 
-    private void saveLemmasAndIndices(String text, int pageId) throws IOException {
-        List<String> lemmaWords = LemmaCollector.extractLemmas(text);
+    private void saveLemmasAndIndices(String text, int pageId) {
+        List<String> lemmaWords;
+        try {
+            lemmaWords = LemmaCollector.extractLemmas(text);
+        } catch (IOException e) {
+            log.error(e.getMessage());
+            return;
+        }
         HashSet<String> uniqueWords = new HashSet<>(lemmaWords);
         Map<String, Integer> lemmaRanks = uniqueWords.stream().collect(Collectors.toMap(word -> word, rank -> 0));
         for (String lemmaWord : lemmaWords) {
@@ -121,12 +122,13 @@ public class RecursiveIndexer extends RecursiveAction {
             String lemmaKey = entry.getKey();
             double rank = entry.getValue();
             LemmaData lemma = updateOrCreateLemma(lemmaKey);
-            IndexData index = new IndexData();
-            index.setLemmaId(lemma.getId());
-            index.setPageId(pageId);
-            index.setRank(rank);
-            index = indexService.create(index);
+//            IndexData index = new IndexData();
+//            index.setLemmaId(lemma.getId());
+//            index.setPageId(pageId);
+//            index.setRank(rank);
+//            index = indexService.create(index);
         }
+//        log.info("SAVED " + lemmaRanks.size() + " indices");
     }
 
     private LemmaData updateOrCreateLemma(String lemmaWord) {
@@ -134,14 +136,29 @@ public class RecursiveIndexer extends RecursiveAction {
         try {
             lemma = lemmaService.getByWordAndSiteId(lemmaWord, siteId);
             lemma.setFrequency(lemma.getFrequency() + 1);
+            lemmaService.update(lemma);
+            log.info(lemma.getLemma() + " updated");
         } catch (NullPointerException e) {
             lemma = new LemmaData();
             lemma.setLemma(lemmaWord);
             lemma.setSiteId(siteId);
             lemma.setFrequency(1);
             lemma = lemmaService.create(lemma);
+            log.info(lemma.getLemma() + " created");
         }
         return lemma;
     }
-}
 
+    private void saveFinalStatus(SiteData site) {
+        if (taskManager.isIndexing()) {
+            site.setStatus(Status.INDEXED);
+            log.info(site.getName() + " INDEXED");
+        } else {
+            site.setStatus(Status.FAILED);
+            site.setLastError("Индексация остановлена пользователем");
+            log.info(site.getName() + " FAILED");
+        }
+        site.setStatusTime(LocalDateTime.now());
+        siteService.update(site);
+    }
+}

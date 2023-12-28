@@ -35,7 +35,7 @@ public class SiteCrudService implements CrudService<SiteData> {
     @Override
     public void update(SiteData item) {
         siteRepository.save(mapToEntity(item));
-        log.info(item.getName() + " UPDATED");
+//        log.info(item.getName() + " UPDATED");
     }
 
     @Override

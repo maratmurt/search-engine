@@ -7,7 +7,9 @@ import searchengine.model.SiteEntity;
 
 @Repository
 public interface LemmaRepository extends JpaRepository<LemmaEntity, Integer> {
-    LemmaEntity findByLemmaAndSite(String lemma, SiteEntity site);
-
     void deleteAllBySite(SiteEntity site);
+
+    LemmaEntity findByLemmaAndSite_Id(String word, int siteId);
+
+    LemmaEntity findByLemma(String word);
 }
