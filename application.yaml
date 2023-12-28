@@ -11,7 +11,7 @@ spring:
         dialect: org.hibernate.dialect.MySQL8Dialect
     hibernate:
       ddl-auto: create
-    show-sql: true
+    show-sql: false
 indexing-settings:
   sites:
 #    - url: https://lenta.ru/
@@ -20,9 +20,9 @@ indexing-settings:
 #      name: ipfran
 #    - url: https://dimonvideo.ru/
 #      name: dimonvideo
-    - url: https://300lux.ru/
-      name: 300lux
-#    - url: https://dress-me-up.ru/
-#      name: dress-me-up
+#    - url: https://300lux.ru/
+#      name: 300lux
+    - url: https://dress-me-up.ru/
+      name: dress-me-up
 #    - url: https://triko.agency/
 #      name: triko

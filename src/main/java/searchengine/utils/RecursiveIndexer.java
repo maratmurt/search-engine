@@ -122,13 +122,13 @@ public class RecursiveIndexer extends RecursiveAction {
             String lemmaKey = entry.getKey();
             double rank = entry.getValue();
             LemmaData lemma = updateOrCreateLemma(lemmaKey);
-//            IndexData index = new IndexData();
-//            index.setLemmaId(lemma.getId());
-//            index.setPageId(pageId);
-//            index.setRank(rank);
-//            index = indexService.create(index);
+            IndexData index = new IndexData();
+            index.setLemmaId(lemma.getId());
+            index.setPageId(pageId);
+            index.setRank(rank);
+            index = indexService.create(index);
         }
-//        log.info("SAVED " + lemmaRanks.size() + " indices");
+        log.info("SAVED " + lemmaRanks.size() + " indices");
     }
 
     private LemmaData updateOrCreateLemma(String lemmaWord) {

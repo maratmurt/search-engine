@@ -10,6 +10,8 @@ import searchengine.model.SiteEntity;
 import searchengine.repositories.LemmaRepository;
 import searchengine.repositories.SiteRepository;
 
+import java.util.NoSuchElementException;
+
 @Slf4j
 @Service
 @RequiredArgsConstructor
@@ -33,7 +35,7 @@ public class LemmaCrudService implements CrudService<LemmaData> {
 
     @Override
     public void update(LemmaData item) {
-        SiteEntity site = siteRepository.findById(item.getId()).orElseThrow();
+        SiteEntity site = siteRepository.findById(item.getSiteId()).orElseThrow();
         lemmaRepository.save(mapToEntity(item, site));
     }
 
@@ -61,8 +63,7 @@ public class LemmaCrudService implements CrudService<LemmaData> {
     }
 
     public LemmaData getByWordAndSiteId(String word, int siteId) {
-//        LemmaEntity entity = lemmaRepository.findByLemmaAndSite_Id(word, siteId);
-        LemmaEntity entity = lemmaRepository.findById(1).orElseThrow();
+        LemmaEntity entity = lemmaRepository.findByLemmaAndSite_Id(word, siteId);
         return mapToData(entity);
     }
 
