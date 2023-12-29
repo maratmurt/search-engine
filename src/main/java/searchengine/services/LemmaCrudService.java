@@ -29,14 +29,14 @@ public class LemmaCrudService implements CrudService<LemmaData> {
     @Override
     public LemmaData create(LemmaData item) {
         SiteEntity site = siteRepository.findById(item.getSiteId()).orElseThrow();
-        LemmaEntity lemma = lemmaRepository.save(mapToEntity(item, site));
+        LemmaEntity lemma = lemmaRepository.saveAndFlush(mapToEntity(item, site));
         return mapToData(lemma);
     }
 
     @Override
     public void update(LemmaData item) {
         SiteEntity site = siteRepository.findById(item.getSiteId()).orElseThrow();
-        lemmaRepository.save(mapToEntity(item, site));
+        lemmaRepository.saveAndFlush(mapToEntity(item, site));
     }
 
     @Override
@@ -63,7 +63,7 @@ public class LemmaCrudService implements CrudService<LemmaData> {
     }
 
     public LemmaData getByWordAndSiteId(String word, int siteId) {
-        LemmaEntity entity = lemmaRepository.findByLemmaAndSite_Id(word, siteId);
+        LemmaEntity entity = lemmaRepository.findByLemmaAndSite_Id(word, siteId).orElseThrow();
         return mapToData(entity);
     }
 

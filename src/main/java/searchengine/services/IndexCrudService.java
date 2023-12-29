@@ -35,6 +35,7 @@ public class IndexCrudService implements CrudService<IndexData> {
         LemmaEntity lemma = lemmaRepository.findById(item.getLemmaId()).orElseThrow();
         PageEntity page = pageRepository.findById(item.getPageId()).orElseThrow();
         IndexEntity index = indexRepository.save(mapToEntity(item, lemma, page));
+        log.info("index " + index.getLemma() + " for " + page.getPath() + " created");
         return mapToData(index);
     }
 

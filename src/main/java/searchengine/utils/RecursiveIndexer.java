@@ -128,7 +128,7 @@ public class RecursiveIndexer extends RecursiveAction {
             index.setRank(rank);
             index = indexService.create(index);
         }
-        log.info("SAVED " + lemmaRanks.size() + " indices");
+        log.info("SAVED " + lemmaRanks.size() + " indices from " + sourcePath);
     }
 
     private LemmaData updateOrCreateLemma(String lemmaWord) {
@@ -138,7 +138,7 @@ public class RecursiveIndexer extends RecursiveAction {
             lemma.setFrequency(lemma.getFrequency() + 1);
             lemmaService.update(lemma);
             log.info(lemma.getLemma() + " updated");
-        } catch (NullPointerException e) {
+        } catch (NoSuchElementException e) {
             lemma = new LemmaData();
             lemma.setLemma(lemmaWord);
             lemma.setSiteId(siteId);

@@ -20,9 +20,9 @@ indexing-settings:
 #      name: ipfran
 #    - url: https://dimonvideo.ru/
 #      name: dimonvideo
-#    - url: https://300lux.ru/
-#      name: 300lux
-    - url: https://dress-me-up.ru/
-      name: dress-me-up
+    - url: https://300lux.ru/
+      name: 300lux
+#    - url: https://dress-me-up.ru/
+#      name: dress-me-up
 #    - url: https://triko.agency/
 #      name: triko

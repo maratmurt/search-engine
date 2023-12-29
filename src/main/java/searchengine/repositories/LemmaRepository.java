@@ -11,5 +11,5 @@ import java.util.Optional;
 public interface LemmaRepository extends JpaRepository<LemmaEntity, Integer> {
     void deleteAllBySite(SiteEntity site);
 
-    LemmaEntity findByLemmaAndSite_Id(String word, int siteId);
+    Optional<LemmaEntity> findByLemmaAndSite_Id(String word, int siteId);
 }
