@@ -3,15 +3,12 @@ package searchengine.services;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
-import org.springframework.http.HttpStatus;
-import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import searchengine.config.Site;
 import searchengine.config.SitesList;
-import searchengine.dto.ResponseObj;
+import searchengine.dto.indexing.IndexingResponse;
 import searchengine.dto.indexing.PageData;
 import searchengine.dto.indexing.SiteData;
-import searchengine.dto.statistics.StatisticsData;
 import searchengine.model.*;
 import searchengine.repositories.IndexRepository;
 import searchengine.repositories.LemmaRepository;
@@ -22,7 +19,9 @@ import searchengine.utils.TaskManager;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.*;
+import java.util.List;
+import java.util.NoSuchElementException;
+import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.regex.Matcher;
 import java.util.regex.Pattern;
@@ -40,12 +39,12 @@ public class IndexingServiceImpl implements IndexingService {
     private final TaskManager taskManager;
 
     @Override
-    public Object startIndexing() {
-        ResponseObj response = new ResponseObj();
+    public IndexingResponse startIndexing() {
+        IndexingResponse response = new IndexingResponse();
         if (!taskManager.getTaskMap().isEmpty()) {
-            response.setResult(false);
             response.setError("Индексация уже запущена");
-            return response.getResponse();
+            response.setResult(false);
+            return response;
         }
 
         taskManager.initialize();
@@ -87,26 +86,26 @@ public class IndexingServiceImpl implements IndexingService {
         new Thread(taskManager).start();
 
         response.setResult(true);
-        return response.getResponse();
+        return response;
     }
 
     @Override
-    public Object stopIndexing() {
-        ResponseObj response = new ResponseObj();
+    public IndexingResponse stopIndexing() {
+        IndexingResponse response = new IndexingResponse();
         if (taskManager.getTaskMap().isEmpty()) {
-            response.setResult(false);
             response.setError("Индексация не запущена");
+            response.setResult(false);
         } else {
             taskManager.stopProcess();
             response.setResult(true);
         }
-        return response.getResponse();
+        return response;
     }
 
     @Override
-    public Object indexPage(String url) {
+    public IndexingResponse indexPage(String url) {
         // https://300lux.ru/stonks
-        ResponseObj response = new ResponseObj();
+        IndexingResponse response = new IndexingResponse();
 
         Matcher rootMatch = Pattern.compile("http(s?)://[\\w-.]+/").matcher(url);
         String rootUrl;
@@ -126,9 +125,9 @@ public class IndexingServiceImpl implements IndexingService {
         }
 
         if (siteUrl == null) {
-            response.setResult(false);
             response.setError("Данная страница находится за пределами сайтов, указанных в конфигурационном файле");
-            return response.getResponse();
+            response.setResult(false);
+            return response;
         }
 
         String path = url.substring(rootMatch.end() - 1);;
@@ -172,6 +171,6 @@ public class IndexingServiceImpl implements IndexingService {
         indexer.saveLemmasAndIndices(pageData.getText(), page);
 
         response.setResult(true);
-        return response.getResponse();
+        return response;
     }
 }

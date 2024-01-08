@@ -6,6 +6,7 @@ import lombok.extern.slf4j.Slf4j;
 import org.jsoup.HttpStatusException;
 import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import searchengine.dto.indexing.PageData;
 import searchengine.dto.indexing.SiteData;
@@ -41,6 +42,7 @@ public class Indexer extends RecursiveAction {
     private final IndexRepository indexRepository;
     private final TaskManager taskManager;
     private final LemmaCollector lemmaCollector;
+    private final HtmlScraper htmlScraper;
 
     @Override
     protected void compute() {
@@ -97,13 +99,14 @@ public class Indexer extends RecursiveAction {
     }
 
     public PageData fetchData(String url) throws IOException, InterruptedException {
-        HtmlScraper scraper = new HtmlScraper();
-        scraper.initialize(url);
+//        scraper.initialize(url);
+        ResponseEntity<String> response = htmlScraper.getResponse(url);
         PageData data = new PageData();
-        data.setStatusCode(scraper.getStatusCode());
-        data.setBody(scraper.getBody());
-        data.setText(scraper.getText());
-        data.setLinks(scraper.getLinks());
+        data.setStatusCode(response.getStatusCodeValue());
+        String body = response.getBody();
+        data.setBody(body);
+        data.setText(htmlScraper.getText(body));
+        data.setLinks(htmlScraper.getLinks(body));
         return data;
     }
 

@@ -4,6 +4,8 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.data.jpa.repository.Query;
 import org.springframework.http.ResponseEntity;
 import org.springframework.web.bind.annotation.*;
+import searchengine.dto.indexing.IndexingResponse;
+import searchengine.dto.search.SearchResponse;
 import searchengine.dto.statistics.StatisticsResponse;
 import searchengine.services.IndexingService;
 import searchengine.services.SearchService;
@@ -24,22 +26,22 @@ public class ApiController {
     }
 
     @GetMapping("/startIndexing")
-    public ResponseEntity<Object> startIndexing() {
+    public ResponseEntity<IndexingResponse> startIndexing() {
         return ResponseEntity.ok(indexingService.startIndexing());
     }
 
     @GetMapping("/stopIndexing")
-    public ResponseEntity<Object> stopIndexing() {
+    public ResponseEntity<IndexingResponse> stopIndexing() {
         return ResponseEntity.ok(indexingService.stopIndexing());
     }
 
     @PostMapping("/indexPage")
-    public ResponseEntity<Object> indexPage(@RequestBody String url) {
+    public ResponseEntity<IndexingResponse> indexPage(@RequestBody String url) {
         return ResponseEntity.ok(indexingService.indexPage(url));
     }
 
     @GetMapping("/search")
-    public ResponseEntity<Object> search(
+    public ResponseEntity<SearchResponse> search(
             @RequestParam(name = "query") String query,
             @RequestParam(name = "site", required = false) String site,
             @RequestParam(name = "offset", required = false, defaultValue = "0") int offset,

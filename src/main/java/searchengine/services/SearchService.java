@@ -1,5 +1,7 @@
 package searchengine.services;
 
+import searchengine.dto.search.SearchResponse;
+
 public interface SearchService {
-    Object search(String query, String site, int offset, int limit);
+    SearchResponse search(String query, String site, int offset, int limit);
 }

@@ -37,17 +37,7 @@ public class TaskManager implements Runnable {
             for (int i = 0; i < siteIds.size(); i++) {
                 int siteId = siteIds.get(i);
                 List<ForkJoinTask<Void>> siteTasks = taskMap.get(siteId);
-                for (int j = 0; j < siteTasks.size(); j++) {
-                    ForkJoinTask<Void> task = siteTasks.get(j);
-                    if (task.isDone()) {
-                        siteTasks.remove(task);
-                        log.info("Removed one from " + siteId + ". " + siteTasks.size() + " tasks left.");
-                    }
-                }
-                if (siteTasks.isEmpty()) {
-                    setFinalStatus(siteId);
-                    taskMap.remove(siteId);
-                }
+                handleSiteTasks(siteTasks, siteId);
             }
         }
         pool.shutdown();
@@ -59,17 +49,19 @@ public class TaskManager implements Runnable {
     }
 
     public void addTask(ForkJoinTask<Void> task, int siteId) {
-        if (!pool.isShutdown()) {
-            List<ForkJoinTask<Void>> siteTasks;
-            if (taskMap.containsKey(siteId)) {
-                siteTasks = taskMap.get(siteId);
-            } else {
-                siteTasks = new ArrayList<>();
-                taskMap.put(siteId, siteTasks);
-            }
-            siteTasks.add(pool.submit(task));
-            log.info("Added a task to " + siteId + ". Tasks count = " + siteTasks.size());
+        if (pool.isShutdown()) {
+            return;
         }
+
+        List<ForkJoinTask<Void>> siteTasks;
+        if (taskMap.containsKey(siteId)) {
+            siteTasks = taskMap.get(siteId);
+        } else {
+            siteTasks = new ArrayList<>();
+            taskMap.put(siteId, siteTasks);
+        }
+        siteTasks.add(pool.submit(task));
+        log.info("Added a task to " + siteRepository.findById(siteId).get().getUrl() + ". Tasks count = " + siteTasks.size());
     }
 
     public void stopProcess() {
@@ -101,6 +93,20 @@ public class TaskManager implements Runnable {
             return false;
         } else {
             return !pool.isShutdown();
+        }
+    }
+
+    private void handleSiteTasks(List<ForkJoinTask<Void>> tasks, int siteId) {
+        for (int i = 0; i < tasks.size(); i++) {
+            ForkJoinTask<Void> task = tasks.get(i);
+            if (task.isDone()) {
+                tasks.remove(task);
+                log.info("Removed one from " + siteRepository.findById(siteId).get().getUrl() + ". " + tasks.size() + " tasks left.");
+            }
+        }
+        if (tasks.isEmpty()) {
+            setFinalStatus(siteId);
+            taskMap.remove(siteId);
         }
     }
 }

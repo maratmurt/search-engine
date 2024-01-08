@@ -1,43 +1,31 @@
 package searchengine.utils;
 
-import lombok.Getter;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
 import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 
 import java.io.IOException;
-import java.util.ArrayList;
 import java.util.HashSet;
-import java.util.List;
 import java.util.Set;
 
 @Slf4j
-@Getter
 @Component
 public class HtmlScraper {
-    private String body;
-    private String text;
-    private int statusCode;
-
-    public void initialize(String url) throws IOException, InterruptedException {
-        Thread.sleep(3000);
-
+    public ResponseEntity<String> getResponse(String url) throws IOException, InterruptedException {
+        Thread.sleep(1000);
         log.info("CONNECTING TO " + url);
         Connection.Response response = Jsoup.connect(url)
-                .timeout(5000)
                 .userAgent("MySearchEngine")
                 .referrer("http://www.google.com")
                 .execute();
-
-        body = response.body();
-        statusCode = response.statusCode();
-        text = Jsoup.parse(body).text();
+        return ResponseEntity.ok(response.body());
     }
 
-    public Set<String> getLinks() {
+    public Set<String> getLinks(String body) {
         Set<String> links = new HashSet<>();
         Elements elements = Jsoup.parse(body).getElementsByAttribute("href");
         for (Element element : elements) {
@@ -45,5 +33,14 @@ public class HtmlScraper {
             links.add(link);
         }
         return links;
+    }
+
+    public String getTitle(String body) {
+        Element header = Jsoup.parse(body).selectFirst("title");
+        return header.text();
+    }
+
+    public String getText(String body) {
+        return Jsoup.parse(body).text();
     }
 }
