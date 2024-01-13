@@ -13,7 +13,6 @@ import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.Map;
-import java.util.Set;
 import java.util.concurrent.ConcurrentHashMap;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
@@ -24,7 +23,6 @@ import java.util.concurrent.ForkJoinTask;
 @RequiredArgsConstructor
 public class TaskManager implements Runnable {
 
-//    private volatile boolean indexing;
     private volatile Map<Integer, List<ForkJoinTask<Void>>> taskMap = new ConcurrentHashMap<>();
     private ForkJoinPool pool;
     private final SiteRepository siteRepository;

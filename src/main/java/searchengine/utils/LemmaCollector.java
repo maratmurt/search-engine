@@ -10,51 +10,62 @@ import java.io.IOException;
 import java.util.ArrayList;
 import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Component
 public class LemmaCollector {
     private LuceneMorphology morphology;
 
-    public HashMap<String, Double> collect(String text) {
-        HashMap<String, Double> lemmaRanks = new HashMap<>();
+    public Map<String, Double> mapLemmasAndRanks(String text) {
+        Map<String, Double> lemmaRanks = new HashMap<>();
+        List<String> lemmas = new ArrayList<>();
+        List<String> words = splitToWords(text);
+        for (String word : words) {
+            List<String> normalForms = morphology.getNormalForms(word);
+            lemmas.addAll(normalForms);
+        }
+        for (String lemma : lemmas) {
+            double rank = 1;
+            if (lemmaRanks.containsKey(lemma)) {
+                rank += lemmaRanks.get(lemma);
+            }
+            lemmaRanks.put(lemma, rank);
+        }
+        return lemmaRanks;
+    }
 
+    public Map<String, List<String>> mapWordsAndLemmas(String text) {
+        Map<String, List<String>> wordLemmas = new HashMap<>();
+        List<String> words = splitToWords(text);
+        for (String word : words) {
+            List<String> normalForms = morphology.getNormalForms(word);
+            wordLemmas.put(word, normalForms);
+        }
+        return wordLemmas;
+    }
+
+    private List<String> splitToWords(String text) {
         String[] words = text.split("[^А-Яа-я]+");
         List<String> legalWords = new ArrayList<>();
         for (String word : words) {
-            if (word.length() > 1) {
-                legalWords.add(word.toLowerCase());
+            word = word.toLowerCase();
+            if (word.length() > 1 && !isFunctional(word)) {
+                legalWords.add(word);
             }
         }
+        return legalWords;
+    }
 
-        List<String> lemmas = new ArrayList<>();
-        for (String word : legalWords) {
-            List<String> wordMorphInfo = morphology.getMorphInfo(word);
-            String[] functionalTypes = {"СОЮЗ", "ПРЕДЛ", "МЕЖД", "ЧАСТ"};
-            boolean isFunctional = false;
-            for (String type : functionalTypes) {
-                if (wordMorphInfo.get(0).contains(type)) {
-                    isFunctional = true;
-                    break;
-                }
-            }
-            if (isFunctional) {
-                continue;
-            }
-
-            List<String> wordBaseForms = morphology.getNormalForms(word);
-            lemmas.addAll(wordBaseForms);
-        }
-
-        for (String lemma : lemmas) {
-            if (lemmaRanks.containsKey(lemma)) {
-                lemmaRanks.put(lemma, lemmaRanks.get(lemma) + 1);
-            } else {
-                lemmaRanks.put(lemma, 1D);
+    private boolean isFunctional(String word) {
+        List<String> morphInfo = morphology.getMorphInfo(word);
+        String[] functionalTypes = {"СОЮЗ", "ПРЕДЛ", "МЕЖД", "ЧАСТ"};
+        for (String type : functionalTypes) {
+            if (morphInfo.get(0).contains(type)) {
+                return true;
             }
         }
-
-        return lemmaRanks;
+        return false;
     }
 
     @PostConstruct

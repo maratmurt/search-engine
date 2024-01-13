@@ -21,7 +21,6 @@ import searchengine.repositories.SiteRepository;
 
 import java.io.IOException;
 import java.time.LocalDateTime;
-import java.util.HashMap;
 import java.util.Map;
 import java.util.NoSuchElementException;
 import java.util.Set;
@@ -99,7 +98,6 @@ public class Indexer extends RecursiveAction {
     }
 
     public PageData fetchData(String url) throws IOException, InterruptedException {
-//        scraper.initialize(url);
         ResponseEntity<String> response = htmlScraper.getResponse(url);
         PageData data = new PageData();
         data.setStatusCode(response.getStatusCodeValue());
@@ -130,7 +128,7 @@ public class Indexer extends RecursiveAction {
     }
 
     public void saveLemmasAndIndices(String text, PageEntity page) {
-        HashMap<String, Double> lemmaRanks = lemmaCollector.collect(text);
+        Map<String, Double> lemmaRanks = lemmaCollector.mapLemmasAndRanks(text);
 
         for (Map.Entry<String, Double> entry : lemmaRanks.entrySet()) {
             String word = entry.getKey();
@@ -161,13 +159,11 @@ public class Indexer extends RecursiveAction {
             //TODO update lemmas properly
             lemma = lemmaRepository.findByLemmaAndSite_Id(lemmaWord, site.getId()).orElseThrow();
             freq += lemma.getFrequency();
-//            log.info(lemma.getLemma() + " updated");
         } else {
             lemmas.add(lemmaWord);
             lemma = new LemmaEntity();
             lemma.setLemma(lemmaWord);
             lemma.setSite(site);
-//            log.info(lemma.getLemma() + " created");
         }
         lemma.setFrequency(freq);
         return lemmaRepository.saveAndFlush(lemma);

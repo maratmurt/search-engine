@@ -104,7 +104,6 @@ public class IndexingServiceImpl implements IndexingService {
 
     @Override
     public IndexingResponse indexPage(String url) {
-        // https://300lux.ru/stonks
         IndexingResponse response = new IndexingResponse();
 
         Matcher rootMatch = Pattern.compile("http(s?)://[\\w-.]+/").matcher(url);

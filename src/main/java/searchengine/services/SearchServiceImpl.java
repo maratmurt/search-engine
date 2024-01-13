@@ -14,6 +14,8 @@ import searchengine.utils.HtmlScraper;
 import searchengine.utils.LemmaCollector;
 
 import java.util.*;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -30,8 +32,10 @@ public class SearchServiceImpl implements SearchService {
     public SearchResponse search(String query, String site, int offset, int limit) {
         SearchResponse response = new SearchResponse();
 
-        List<String> queryLemmas = lemmaCollector.collect(query).keySet().stream().toList();
-        Map<Integer, List<String>> lemmaFreqs = findAllLemmaFreqs(queryLemmas);
+        List<String> queryLemmas = lemmaCollector.mapLemmasAndRanks(query).keySet().stream().toList();
+        //TODO empty query lemmas list exception
+        log.info(queryLemmas.size() + " query lemmas");
+        Map<Integer, List<String>> lemmaFreqs = findAllLemmaFrequencies(queryLemmas);
         List<Integer> freqs = lemmaFreqs.keySet().stream().toList();
         String rarestWord = lemmaFreqs.get(freqs.get(0)).get(0);
         relevantPages = indexRepository.findAllPagesByLemmaWord(rarestWord);
@@ -50,7 +54,18 @@ public class SearchServiceImpl implements SearchService {
         }
         log.info("relevant pages size = " + relevantPages.size());
 
-//        List<Integer> pageIds = relevantPages.stream().map(PageEntity::getId).toList();
+        double maxRelevance = 0;
+        Map<Integer, Double> pageAbsRelevances = new HashMap<>();
+        for (PageEntity page: relevantPages) {
+            double absRelevance = 0;
+            for (String lemmaWord : queryLemmas) {
+                double rank = indexRepository.getRankByPageIdAndLemmaWord(page.getId(), lemmaWord);
+                absRelevance += rank;
+            }
+            pageAbsRelevances.put(page.getId(), absRelevance);
+            maxRelevance = Math.max(absRelevance, maxRelevance);
+        }
+
         List<SearchData> data = new ArrayList<>();
         for (PageEntity page : relevantPages) {
             SearchData item = new SearchData();
@@ -60,7 +75,13 @@ public class SearchServiceImpl implements SearchService {
             siteUrl = siteUrl.substring(0, siteUrl.length() - 1);
             item.setSite(siteUrl);
             item.setSiteName(page.getSite().getName());
-            //TODO SearchData snippet and relevance
+            double absRelevance = pageAbsRelevances.get(page.getId());
+            double relevance = absRelevance / maxRelevance;
+            item.setRelevance(relevance);
+            String text = htmlScraper.getText(page.getContent());
+            String snippet = generateSnippet(text, query);
+            log.info(snippet);
+            item.setSnippet(snippet);
             data.add(item);
         }
         response.setData(data);
@@ -69,7 +90,47 @@ public class SearchServiceImpl implements SearchService {
         return response;
     }
 
-    private Map<Integer, List<String>> findAllLemmaFreqs(List<String> lemmaWords) {
+    private String generateSnippet(String text, String query) {
+        String snippet = "";
+        List<String> queryLemmas = lemmaCollector.mapLemmasAndRanks(query).keySet().stream().toList();
+        Map<String, List<String>> wordsLemmas = lemmaCollector.mapWordsAndLemmas(text);
+        Set<String> matchingWords = new HashSet<>();
+        Set<String> allWords = wordsLemmas.keySet();
+        for (String word : allWords) {
+            String lemma = wordsLemmas.get(word).get(0);
+            if (queryLemmas.contains(lemma)) {
+                log.info(word + " - " + lemma);
+                matchingWords.add(word);
+            }
+        }
+        String regex = "(" + String.join("|", matchingWords) + ")";
+        log.info(regex);
+        Matcher match = Pattern.compile(regex, Pattern.CASE_INSENSITIVE).matcher(text);
+
+        int range = 100 / matchingWords.size();
+        int start = 0, end = 0;
+
+        while (match.find() && !matchingWords.isEmpty()) {
+            String matchingWord = match.group();
+            if (!matchingWords.contains(matchingWord)) {
+                continue;
+            }
+            matchingWords.remove(matchingWord);
+            if (match.start() - end > range) {
+                start = Math.max(0, match.start() - range);
+                end = Math.min(text.length(), match.end() + range);
+                snippet = snippet + "..." + text.substring(start, end);
+            } else {
+                snippet = snippet + text.substring(end, match.end() + range);
+                end = match.end() + range;
+            }
+        }
+        snippet += "...";
+
+        return snippet;
+    }
+
+    private Map<Integer, List<String>> findAllLemmaFrequencies(List<String> lemmaWords) {
         Map<Integer, List<String>> lemmaFreqs = new TreeMap<>();
         for (String word : lemmaWords) {
             List<LemmaEntity> lemmas = lemmaRepository.findAllByLemma(word).orElseThrow();
