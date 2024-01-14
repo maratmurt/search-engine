@@ -32,22 +32,34 @@ public class SearchServiceImpl implements SearchService {
     public SearchResponse search(String query, String site, int offset, int limit) {
         SearchResponse response = new SearchResponse();
 
+        if (query.isEmpty()) {
+            response.setResult(false);
+            response.setError("Задан пустой поисковый запрос");
+            return response;
+        }
+
         List<String> queryLemmas = lemmaCollector.mapLemmasAndRanks(query).keySet().stream().toList();
-        //TODO empty query lemmas list exception
-        log.info(queryLemmas.size() + " query lemmas");
-        Map<Integer, List<String>> lemmaFreqs = findAllLemmaFrequencies(queryLemmas);
-        List<Integer> freqs = lemmaFreqs.keySet().stream().toList();
-        String rarestWord = lemmaFreqs.get(freqs.get(0)).get(0);
+        Map<Integer, List<String>> lemmasFreqs = findAllLemmaFrequencies(queryLemmas);
+        log.info("lemma frequencies count = " + lemmasFreqs.size());
+        if (lemmasFreqs.isEmpty()) {
+            response.setResult(true);
+            response.setCount(0);
+            response.setData(null);
+            return response;
+        }
+
+        List<Integer> freqs = lemmasFreqs.keySet().stream().toList();
+        String rarestWord = lemmasFreqs.get(freqs.get(0)).get(0);
         relevantPages = indexRepository.findAllPagesByLemmaWord(rarestWord);
 
         Integer siteId = null;
-        if (!site.isEmpty()) {
+        if (site != null && !site.isBlank()) {
             site += site.endsWith("/") ? "" : "/";
             siteId = siteRepository.findByUrl(site).orElseThrow().getId();
         }
 
         for (int i = 0; i < freqs.size(); i++) {
-            List<String> lemmaWords = lemmaFreqs.get(freqs.get(i));
+            List<String> lemmaWords = lemmasFreqs.get(freqs.get(i));
             for (String word : lemmaWords) {
                 filterRelevantPages(word, siteId);
             }
@@ -80,7 +92,7 @@ public class SearchServiceImpl implements SearchService {
             item.setRelevance(relevance);
             String text = htmlScraper.getText(page.getContent());
             String snippet = generateSnippet(text, query);
-            log.info(snippet);
+            log.info("snippet: " + snippet);
             item.setSnippet(snippet);
             data.add(item);
         }
@@ -91,24 +103,35 @@ public class SearchServiceImpl implements SearchService {
     }
 
     private String generateSnippet(String text, String query) {
-        String snippet = "";
+        StringBuilder snippet = new StringBuilder();
         List<String> queryLemmas = lemmaCollector.mapLemmasAndRanks(query).keySet().stream().toList();
         Map<String, List<String>> wordsLemmas = lemmaCollector.mapWordsAndLemmas(text);
         Set<String> matchingWords = new HashSet<>();
         Set<String> allWords = wordsLemmas.keySet();
         for (String word : allWords) {
-            String lemma = wordsLemmas.get(word).get(0);
-            if (queryLemmas.contains(lemma)) {
-                log.info(word + " - " + lemma);
-                matchingWords.add(word);
+            List<String> lemmas = wordsLemmas.get(word);
+            for (String lemma : lemmas) {
+                if (queryLemmas.contains(lemma)) {
+                    log.info(word + " - " + lemma);
+                    matchingWords.add(word);
+                }
             }
         }
-        String regex = "(" + String.join("|", matchingWords) + ")";
-        log.info(regex);
+        String regex = "(?<=[^А-Яа-я])(" + String.join("|", matchingWords) + ")(?=[^А-Яа-я])";
+        log.info("regex: " + regex);
         Matcher match = Pattern.compile(regex, Pattern.CASE_INSENSITIVE).matcher(text);
 
-        int range = 100 / matchingWords.size();
-        int start = 0, end = 0;
+        int range = 80 / matchingWords.size();
+        String bOpen = "<b>", bClose = "</b>", dots = "...";
+
+        match.find();
+        int start = Math.max(0, match.start() - range);
+        snippet.append(dots)
+                .append(text, start, match.start())
+                .append(bOpen)
+                .append(text, match.start(), match.end())
+                .append(bClose);
+        int lastMatchEnd = match.end();
 
         while (match.find() && !matchingWords.isEmpty()) {
             String matchingWord = match.group();
@@ -116,18 +139,27 @@ public class SearchServiceImpl implements SearchService {
                 continue;
             }
             matchingWords.remove(matchingWord);
-            if (match.start() - end > range) {
-                start = Math.max(0, match.start() - range);
-                end = Math.min(text.length(), match.end() + range);
-                snippet = snippet + "..." + text.substring(start, end);
+            if (match.start() - lastMatchEnd > range * 2) {
+                snippet.append(text, lastMatchEnd, lastMatchEnd + range)
+                        .append(dots)
+                        .append(text, match.start() - range, match.start())
+                        .append(bOpen)
+                        .append(text, match.start(), match.end())
+                        .append(bClose);
             } else {
-                snippet = snippet + text.substring(end, match.end() + range);
-                end = match.end() + range;
+                snippet.append(text, lastMatchEnd, match.start())
+                        .append(bOpen)
+                        .append(text, match.start(), match.end())
+                        .append(bClose);
             }
+            lastMatchEnd = match.end();
         }
-        snippet += "...";
-
-        return snippet;
+        if (lastMatchEnd + range < text.length()) {
+            snippet.append(text, lastMatchEnd, lastMatchEnd + range).append(dots);
+        } else {
+            snippet.append(text, lastMatchEnd, text.length());
+        }
+        return snippet.toString();
     }
 
     private Map<Integer, List<String>> findAllLemmaFrequencies(List<String> lemmaWords) {
