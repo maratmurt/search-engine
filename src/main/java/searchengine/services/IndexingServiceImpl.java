@@ -106,6 +106,7 @@ public class IndexingServiceImpl implements IndexingService {
     public IndexingResponse indexPage(String url) {
         IndexingResponse response = new IndexingResponse();
 
+        url += url.endsWith("/") ? "" : "/";
         Matcher rootMatch = Pattern.compile("http(s?)://[\\w-.]+/").matcher(url);
         String rootUrl;
         if (rootMatch.find()) {
@@ -129,8 +130,7 @@ public class IndexingServiceImpl implements IndexingService {
             return response;
         }
 
-        String path = url.substring(rootMatch.end() - 1);;
-        path += path.endsWith("/") ? "" : "/";
+        String path = url.substring(rootMatch.end() - 1);
         SiteEntity site;
         log.info(path);
         try {
