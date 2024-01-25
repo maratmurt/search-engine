@@ -26,3 +26,10 @@ indexing-settings:
       name: dress-me-up
     - url: https://triko.agency/
       name: triko
+  agents:
+    - Searchify
+    - Findr
+    - Discovera
+    - Inquisit
+    - TruSearch
+    - QuickQuery

@@ -1,5 +1,6 @@
 package searchengine.utils;
 
+import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
@@ -7,19 +8,28 @@ import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
+import searchengine.config.AgentsList;
 
 import java.io.IOException;
 import java.util.HashSet;
+import java.util.List;
+import java.util.Random;
 import java.util.Set;
 
 @Slf4j
 @Component
+@RequiredArgsConstructor
 public class HtmlScraper {
+    private final AgentsList agentsList;
+    private Random random = new Random();
+
     public ResponseEntity<String> getResponse(String url) throws IOException, InterruptedException {
         Thread.sleep(1000);
-        log.info("CONNECTING TO " + url);
+        List<String> agents = agentsList.getAgents();
+        String agent = agents.get(random.nextInt(agents.size()));
+        log.info("Agent: " + agent + ". Connecting to " + url);
         Connection.Response response = Jsoup.connect(url)
-                .userAgent("MySearchEngine")
+                .userAgent(agent)
                 .referrer("http://www.google.com")
                 .execute();
         return ResponseEntity.ok(response.body());
