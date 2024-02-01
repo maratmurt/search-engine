@@ -41,8 +41,12 @@ public class LemmaCollector {
         Map<String, List<String>> wordsLemmas = new HashMap<>();
         List<String> words = splitToWords(text);
         for (String word : words) {
-            List<String> normalForms = detectAndGetNormalForms(word);
-            wordsLemmas.put(word, normalForms);
+            try {
+                List<String> normalForms = detectAndGetNormalForms(word);
+                wordsLemmas.put(word, normalForms);
+            } catch (IllegalArgumentException e) {
+                log.error(e.getMessage());
+            }
         }
         return wordsLemmas;
     }
