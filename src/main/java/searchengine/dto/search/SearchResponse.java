@@ -8,6 +8,6 @@ import java.util.List;
 public class SearchResponse {
     private boolean result;
     private String error;
-    private int count;
+    private int count = 0;
     private List<SearchData> data;
 }

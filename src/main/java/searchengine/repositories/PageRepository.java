@@ -6,6 +6,8 @@ import org.springframework.transaction.annotation.Transactional;
 import searchengine.model.PageEntity;
 import searchengine.model.SiteEntity;
 
+import java.util.Optional;
+
 @Repository
 public interface PageRepository extends JpaRepository<PageEntity, Integer> {
     @Transactional
@@ -15,4 +17,6 @@ public interface PageRepository extends JpaRepository<PageEntity, Integer> {
     void deleteBySiteAndPath(SiteEntity site, String path);
 
     int countBySite(SiteEntity site);
+
+    Optional<PageEntity> findBySiteAndPath(SiteEntity site, String path);
 }

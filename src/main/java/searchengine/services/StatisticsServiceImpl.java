@@ -34,13 +34,6 @@ public class StatisticsServiceImpl implements StatisticsService {
 
     @Override
     public StatisticsResponse getStatistics() {
-        String[] statuses = { "INDEXED", "FAILED", "INDEXING" };
-        String[] errors = {
-                "Ошибка индексации: главная страница сайта не доступна",
-                "Ошибка индексации: сайт не доступен",
-                ""
-        };
-
         TotalStatistics total = new TotalStatistics();
         total.setSites(sites.getSites().size());
         total.setIndexing(taskManager.isIndexing());
@@ -53,16 +46,18 @@ public class StatisticsServiceImpl implements StatisticsService {
             item.setName(siteConfig.getName());
             item.setUrl(siteConfig.getUrl());
 
-            SiteEntity site;
+            SiteEntity siteEntity;
             try {
-                site = siteRepository.findByUrl(siteConfig.getUrl()).orElseThrow();
-                int pages = pageRepository.countBySite(site);
-                int lemmas = lemmaRepository.countBySite(site);
+                String siteUrl = siteConfig.getUrl();
+                siteUrl += siteUrl.endsWith("/") ? "" : "/";
+                siteEntity = siteRepository.findByUrl(siteUrl).orElseThrow();
+                int pages = pageRepository.countBySite(siteEntity);
+                int lemmas = lemmaRepository.countBySite(siteEntity);
                 item.setPages(pages);
                 item.setLemmas(lemmas);
-                item.setStatus(site.getStatus().toString());
-                item.setError(site.getLastError());
-                ZonedDateTime zdt = ZonedDateTime.of(site.getStatusTime(), ZoneId.systemDefault());
+                item.setStatus(siteEntity.getStatus().toString());
+                item.setError(siteEntity.getLastError());
+                ZonedDateTime zdt = ZonedDateTime.of(siteEntity.getStatusTime(), ZoneId.systemDefault());
                 item.setStatusTime(zdt.toEpochSecond());
                 total.setPages(total.getPages() + pages);
                 total.setLemmas(total.getLemmas() + lemmas);

@@ -40,11 +40,8 @@ public class SearchServiceImpl implements SearchService {
 
         List<String> queryLemmas = lemmaCollector.mapLemmasAndRanks(query).keySet().stream().toList();
         Map<Integer, List<String>> lemmasFreqs = findAllLemmaFrequencies(queryLemmas);
-        log.info("lemma frequencies count = " + lemmasFreqs.size());
         if (lemmasFreqs.isEmpty()) {
             response.setResult(true);
-            response.setCount(0);
-            response.setData(null);
             return response;
         }
 
@@ -66,36 +63,10 @@ public class SearchServiceImpl implements SearchService {
         }
         log.info("relevant pages size = " + relevantPages.size());
 
-        double maxRelevance = 0;
-        Map<Integer, Double> pageAbsRelevances = new HashMap<>();
-        for (PageEntity page: relevantPages) {
-            double absRelevance = 0;
-            for (String lemmaWord : queryLemmas) {
-                double rank = indexRepository.getRankByPageIdAndLemmaWord(page.getId(), lemmaWord);
-                absRelevance += rank;
-            }
-            pageAbsRelevances.put(page.getId(), absRelevance);
-            maxRelevance = Math.max(absRelevance, maxRelevance);
-        }
+        Map<Integer, Double> pageAbsRelevanceMap = getPageAbsoluteRelevanceMap(queryLemmas);
+        double maxRelevance = pageAbsRelevanceMap.values().stream().reduce(Double::max).orElse(0D);
 
-        List<SearchData> data = new ArrayList<>();
-        for (PageEntity page : relevantPages) {
-            SearchData item = new SearchData();
-            item.setUri(page.getPath());
-            item.setTitle(htmlScraper.getTitle(page.getContent()));
-            String siteUrl = page.getSite().getUrl();
-            siteUrl = siteUrl.substring(0, siteUrl.length() - 1);
-            item.setSite(siteUrl);
-            item.setSiteName(page.getSite().getName());
-            double absRelevance = pageAbsRelevances.get(page.getId());
-            double relevance = absRelevance / maxRelevance;
-            item.setRelevance(relevance);
-            String text = htmlScraper.getText(page.getContent());
-            String snippet = generateSnippet(text, query);
-            log.info("snippet: " + snippet);
-            item.setSnippet(snippet);
-            data.add(item);
-        }
+        List<SearchData> data = getData(pageAbsRelevanceMap, maxRelevance, query);
         response.setData(data);
         response.setResult(true);
         response.setCount(data.size());
@@ -104,26 +75,12 @@ public class SearchServiceImpl implements SearchService {
 
     private String generateSnippet(String text, String query) {
         StringBuilder snippet = new StringBuilder();
-        List<String> queryLemmas = lemmaCollector.mapLemmasAndRanks(query).keySet().stream().toList();
-        Map<String, List<String>> wordsLemmas = lemmaCollector.mapWordsAndLemmas(text);
-        Set<String> matchingWords = new HashSet<>();
-        Set<String> allWords = wordsLemmas.keySet();
-        for (String word : allWords) {
-            List<String> lemmas = wordsLemmas.get(word);
-            for (String lemma : lemmas) {
-                if (queryLemmas.contains(lemma)) {
-                    log.info(word + " - " + lemma);
-                    matchingWords.add(word);
-                }
-            }
-        }
+        List<String> matchingWords = findMatchingWords(text, query);
         String regex = "(?<=[^А-Яа-я])(" + String.join("|", matchingWords) + ")(?=[^А-Яа-я])";
         log.info("regex: " + regex);
         Matcher match = Pattern.compile(regex, Pattern.CASE_INSENSITIVE).matcher(text);
-
         int range = 80 / matchingWords.size();
         String bOpen = "<b>", bClose = "</b>", dots = "...";
-
         match.find();
         int start = Math.max(0, match.start() - range);
         snippet.append(dots)
@@ -195,5 +152,57 @@ public class SearchServiceImpl implements SearchService {
                 log.info("Removed relevant page " + relevantPage.getId());
             }
         }
+    }
+
+    private List<SearchData> getData(Map<Integer, Double> pageAbsRelevanceMap, double maxRelevance, String query) {
+        List<SearchData> data = new ArrayList<>();
+        for (PageEntity page : relevantPages) {
+            SearchData item = new SearchData();
+            item.setUri(page.getPath());
+            item.setTitle(htmlScraper.getTitle(page.getContent()));
+            String siteUrl = page.getSite().getUrl();
+            siteUrl = siteUrl.substring(0, siteUrl.length() - 1);
+            item.setSite(siteUrl);
+            item.setSiteName(page.getSite().getName());
+            double absRelevance = pageAbsRelevanceMap.get(page.getId());
+            double relevance = absRelevance / maxRelevance;
+            item.setRelevance(relevance);
+            String text = htmlScraper.getText(page.getContent());
+            String snippet = generateSnippet(text, query);
+            log.info("snippet: " + snippet);
+            item.setSnippet(snippet);
+            data.add(item);
+        }
+        return data;
+    }
+
+    private Map<Integer, Double> getPageAbsoluteRelevanceMap(List<String> queryLemmas) {
+        Map<Integer, Double> pageAbsRelevanceMap = new HashMap<>();
+        for (PageEntity page: relevantPages) {
+            double absRelevance = 0;
+            for (String lemmaWord : queryLemmas) {
+                double rank = indexRepository.getRankByPageIdAndLemmaWord(page.getId(), lemmaWord);
+                absRelevance += rank;
+            }
+            pageAbsRelevanceMap.put(page.getId(), absRelevance);
+        }
+        return pageAbsRelevanceMap;
+    }
+
+    private List<String> findMatchingWords(String text, String query) {
+        List<String> queryLemmas = lemmaCollector.mapLemmasAndRanks(query).keySet().stream().toList();
+        Map<String, List<String>> wordsLemmasMap = lemmaCollector.mapWordsAndLemmas(text);
+        Set<String> matchingWords = new HashSet<>();
+        Set<String> allWords = wordsLemmasMap.keySet();
+        for (String word : allWords) {
+            List<String> lemmas = wordsLemmasMap.get(word);
+            for (String lemma : lemmas) {
+                if (queryLemmas.contains(lemma)) {
+                    log.info(word + " - " + lemma);
+                    matchingWords.add(word);
+                }
+            }
+        }
+        return new ArrayList<>(matchingWords);
     }
 }

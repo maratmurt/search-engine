@@ -14,18 +14,18 @@ spring:
     show-sql: false
 indexing-settings:
   sites:
-#    - url: https://www.lenta.ru
-#      name: Лента.ру
-#    - url: https://www.skillbox.ru
-#      name: Skillbox
-#    - url: https://www.playback.ru
-#      name: PlayBack.Ru
-    - url: https://300lux.ru/
-      name: 300lux
-    - url: https://dress-me-up.ru/
-      name: dress-me-up
-    - url: https://triko.agency/
-      name: triko
+    - url: https://www.lenta.ru
+      name: Лента.ру
+    - url: https://www.skillbox.ru
+      name: Skillbox
+    - url: https://www.playback.ru
+      name: PlayBack.Ru
+#    - url: https://300lux.ru
+#      name: 300lux
+#    - url: https://dress-me-up.ru
+#      name: dress-me-up
+#    - url: https://triko.agency
+#      name: triko
   agents:
     - Searchify
     - Findr

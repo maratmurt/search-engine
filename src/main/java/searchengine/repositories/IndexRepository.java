@@ -23,4 +23,6 @@ public interface IndexRepository extends JpaRepository<IndexEntity, Integer> {
 
     @Query("SELECT i.rank FROM IndexEntity i WHERE i.page.id = :pageId AND i.lemma.lemma = :lemmaWord")
     double getRankByPageIdAndLemmaWord(@Param("pageId") int pageId, @Param("lemmaWord") String lemmaWord);
+
+    List<IndexEntity> findAllByPage(PageEntity page);
 }
