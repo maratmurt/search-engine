@@ -40,6 +40,7 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         List<DetailedStatisticsItem> detailed = new ArrayList<>();
         List<Site> sitesList = sites.getSites();
+        //noinspection ForLoopReplaceableByForEach
         for(int i = 0; i < sitesList.size(); i++) {
             Site siteConfig = sitesList.get(i);
             DetailedStatisticsItem item = new DetailedStatisticsItem();
@@ -55,7 +56,9 @@ public class StatisticsServiceImpl implements StatisticsService {
                 int lemmas = lemmaRepository.countBySite(siteEntity);
                 item.setPages(pages);
                 item.setLemmas(lemmas);
-                item.setStatus(siteEntity.getStatus().toString());
+                if (siteEntity.getStatus() != null) {
+                    item.setStatus(siteEntity.getStatus().toString());
+                }
                 item.setError(siteEntity.getLastError());
                 ZonedDateTime zdt = ZonedDateTime.of(siteEntity.getStatusTime(), ZoneId.systemDefault());
                 item.setStatusTime(zdt.toEpochSecond());
