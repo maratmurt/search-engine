@@ -72,6 +72,7 @@ public class Indexer extends RecursiveAction {
         Set<String> sitePaths = siteData.getPaths();
         for (String link : links) {
             String path = convertLinkToPath(link);
+            log.info(path);
             if (path == null || sitePaths.contains(path)) {
                 continue;
             }
@@ -111,8 +112,8 @@ public class Indexer extends RecursiveAction {
     private String convertLinkToPath(String link) {
         SiteEntity site = siteRepository.findById(siteData.getSiteId()).orElseThrow();
         String siteUrl = site.getUrl();
-        String urlRegex = "(" + siteUrl + ")[\\w-/]+$";
-        String pathRegex = "^/[\\w-]+[\\w-/]*/?$";
+        String urlRegex = "(" + siteUrl + ")[\\w-/.]+$";
+        String pathRegex = "^/[\\w-]+[\\w-/]*(/|(\\.html))?$";
 
         String path;
         if (link.matches(urlRegex)) {

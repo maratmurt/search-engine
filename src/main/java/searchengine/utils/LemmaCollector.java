@@ -82,7 +82,7 @@ public class LemmaCollector {
         } else if (word.matches("[A-Za-z]+")) {
             normalForms = englishMorph.getNormalForms(word.toLowerCase());
         } else {
-            throw new IllegalArgumentException("\'" + word + "\' is not correct english or russian word!");
+            throw new IllegalArgumentException("'" + word + "' is not correct english or russian word!");
         }
         return normalForms;
     }
