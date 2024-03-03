@@ -66,7 +66,8 @@ public class SearchServiceImpl implements SearchService {
         Map<Integer, Double> pageAbsRelevanceMap = getPageAbsoluteRelevanceMap(queryLemmas);
         double maxRelevance = pageAbsRelevanceMap.values().stream().reduce(Double::max).orElse(0D);
 
-        List<SearchData> data = getData(pageAbsRelevanceMap, maxRelevance, query);
+        limit = limit != 0 ? limit : 20;
+        List<SearchData> data = getData(pageAbsRelevanceMap, maxRelevance, query, offset, limit);
         response.setData(data);
         response.setResult(true);
         response.setCount(data.size());
@@ -154,9 +155,13 @@ public class SearchServiceImpl implements SearchService {
         }
     }
 
-    private List<SearchData> getData(Map<Integer, Double> pageAbsRelevanceMap, double maxRelevance, String query) {
+    private List<SearchData> getData(Map<Integer, Double> pageAbsRelevanceMap, double maxRelevance, String query, int offset, int limit) {
         List<SearchData> data = new ArrayList<>();
-        for (PageEntity page : relevantPages) {
+        for (int i = offset; i < offset + limit; i++) {
+            if (i >= relevantPages.size()) {
+                break;
+            }
+            PageEntity page = relevantPages.get(i);
             SearchData item = new SearchData();
             item.setUri(page.getPath());
             item.setTitle(htmlScraper.getTitle(page.getContent()));

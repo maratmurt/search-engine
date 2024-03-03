@@ -45,7 +45,7 @@ public class Indexer extends RecursiveAction {
 
     @Override
     protected void compute() {
-        SiteEntity site = siteRepository.findById(siteData.getSiteId()).orElseThrow();
+        SiteEntity site = siteData.getSite();
         String url = site.getUrl() + sourcePath.substring(1);
         PageData pageData;
         try {
@@ -64,7 +64,7 @@ public class Indexer extends RecursiveAction {
             return;
         }
 
-        PageEntity page = savePage(pageData);
+        PageEntity page = storePage(pageData);
 
         saveLemmasAndIndices(pageData.getText(), page);
 
@@ -72,7 +72,6 @@ public class Indexer extends RecursiveAction {
         Set<String> sitePaths = siteData.getPaths();
         for (String link : links) {
             String path = convertLinkToPath(link);
-            log.info(path);
             if (path == null || sitePaths.contains(path)) {
                 continue;
             }
@@ -85,8 +84,8 @@ public class Indexer extends RecursiveAction {
         log.info(url + " DONE");
     }
 
-    public PageEntity savePage(PageData data) {
-        SiteEntity site = siteRepository.findById(siteData.getSiteId()).orElseThrow();
+    public PageEntity storePage(PageData data) {
+        SiteEntity site = siteData.getSite();
         PageEntity page = new PageEntity();
         page.setSite(site);
         page.setPath(sourcePath);
@@ -110,7 +109,7 @@ public class Indexer extends RecursiveAction {
     }
 
     private String convertLinkToPath(String link) {
-        SiteEntity site = siteRepository.findById(siteData.getSiteId()).orElseThrow();
+        SiteEntity site = siteData.getSite();
         String siteUrl = site.getUrl();
         String urlRegex = "(" + siteUrl + ")[\\w-/.]+$";
         String pathRegex = "^/[\\w-]+[\\w-/]*(/|(\\.html))?$";
@@ -152,7 +151,7 @@ public class Indexer extends RecursiveAction {
     }
 
     private LemmaEntity createOrUpdateLemma(String lemmaWord) {
-        SiteEntity site = siteRepository.findById(siteData.getSiteId()).orElseThrow();
+        SiteEntity site = siteData.getSite();
         Set<String> lemmas = siteData.getLemmas();
         int freq = 1;
         LemmaEntity lemma;
@@ -167,6 +166,6 @@ public class Indexer extends RecursiveAction {
             lemma.setSite(site);
         }
         lemma.setFrequency(freq);
-        return lemmaRepository.saveAndFlush(lemma);
+        return lemmaRepository.save(lemma);
     }
 }

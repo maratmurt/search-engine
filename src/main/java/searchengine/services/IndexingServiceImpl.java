@@ -120,7 +120,7 @@ public class IndexingServiceImpl implements IndexingService {
         } catch (IOException | InterruptedException e) {
             throw new RuntimeException(e);
         }
-        PageEntity page = indexer.savePage(pageData);
+        PageEntity page = indexer.storePage(pageData);
         indexer.saveLemmasAndIndices(pageData.getText(), page);
 
         response.setResult(true);
@@ -176,7 +176,7 @@ public class IndexingServiceImpl implements IndexingService {
         siteData.setPaths(paths);
         Set<String> lemmas = ConcurrentHashMap.newKeySet();
         siteData.setLemmas(lemmas);
-        siteData.setSiteId(site.getId());
+        siteData.setSite(site);
         indexer.setSiteData(siteData);
         indexer.setSourcePath(path);
         return indexer;

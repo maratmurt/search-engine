@@ -47,7 +47,11 @@ public class HtmlScraper {
 
     public String getTitle(String body) {
         Element header = Jsoup.parse(body).selectFirst("title");
-        return header.text();
+        if (header == null) {
+            return "Без заголовка";
+        } else {
+            return header.text();
+        }
     }
 
     public String getText(String body) {
