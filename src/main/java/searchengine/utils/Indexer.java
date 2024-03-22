@@ -122,9 +122,7 @@ public class Indexer extends RecursiveAction {
         } else {
             return null;
         }
-        path += link.endsWith("/") ? "" : "/";
-
-        return path;
+        return UrlUtils.endingSlash(path);
     }
 
     public void saveLemmasAndIndices(String text, PageEntity page) {

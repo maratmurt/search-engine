@@ -16,6 +16,7 @@ import searchengine.repositories.PageRepository;
 import searchengine.repositories.SiteRepository;
 import searchengine.utils.Indexer;
 import searchengine.utils.TaskManager;
+import searchengine.utils.UrlUtils;
 
 import java.io.IOException;
 import java.net.URLDecoder;
@@ -53,7 +54,7 @@ public class IndexingServiceImpl implements IndexingService {
         for (Site siteConfig : sites.getSites()) {
             String name = siteConfig.getName();
             String url = siteConfig.getUrl();
-            url += url.endsWith("/") ? "" : "/";
+            url = UrlUtils.endingSlash(url);
 
             deleteExistingEntities(url);
 
@@ -64,8 +65,7 @@ public class IndexingServiceImpl implements IndexingService {
             site.setStatusTime(LocalDateTime.now());
             site = siteRepository.save(site);
 
-            String path = "/";
-            Indexer indexer = createIndexer(site, path);
+            Indexer indexer = createIndexer(site, "/");
             taskManager.addTask(indexer, site.getId());
         }
         new Thread(taskManager).start();
@@ -91,10 +91,11 @@ public class IndexingServiceImpl implements IndexingService {
     public IndexingResponse indexPage(String url) {
         IndexingResponse response = new IndexingResponse();
 
-        url = decodeAndFormatUrl(url);
+        url = UrlUtils.decode(url);
+        url = UrlUtils.endingSlash(url);
         String rootUrl;
         try {
-            rootUrl = extractRootUrl(url);
+            rootUrl = UrlUtils.extractRoot(url);
         } catch (IllegalArgumentException e) {
             log.error(e.getMessage());
             response.setError("Введён некорректный адрес страницы");
@@ -125,17 +126,6 @@ public class IndexingServiceImpl implements IndexingService {
 
         response.setResult(true);
         return response;
-    }
-
-    private String extractRootUrl(String url) {
-        Matcher rootMatch = Pattern.compile("http(s?)://[\\w-.]+/").matcher(url);
-        String rootUrl;
-        if (rootMatch.find()) {
-            rootUrl = rootMatch.group();
-        } else {
-            throw new IllegalArgumentException();
-        }
-        return rootUrl;
     }
 
     private SiteEntity findOrCreateSite(String url, String name) {
@@ -203,12 +193,5 @@ public class IndexingServiceImpl implements IndexingService {
             }
         }
         return site;
-    }
-
-    private String decodeAndFormatUrl(String url) {
-        url = url.substring(4);
-        url = URLDecoder.decode(url, StandardCharsets.UTF_8);
-        url += url.endsWith("/") ? "" : "/";
-        return url;
     }
 }

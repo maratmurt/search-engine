@@ -12,6 +12,7 @@ import searchengine.repositories.LemmaRepository;
 import searchengine.repositories.SiteRepository;
 import searchengine.utils.HtmlScraper;
 import searchengine.utils.LemmaCollector;
+import searchengine.utils.UrlUtils;
 
 import java.util.*;
 import java.util.regex.Matcher;
@@ -51,7 +52,7 @@ public class SearchServiceImpl implements SearchService {
 
         Integer siteId = null;
         if (site != null && !site.isBlank()) {
-            site += site.endsWith("/") ? "" : "/";
+            site = UrlUtils.endingSlash(site);
             siteId = siteRepository.findByUrl(site).orElseThrow().getId();
         }
 
@@ -157,7 +158,8 @@ public class SearchServiceImpl implements SearchService {
 
     private List<SearchData> getData(Map<Integer, Double> pageAbsRelevanceMap, double maxRelevance, String query, int offset, int limit) {
         List<SearchData> data = new ArrayList<>();
-        for (int i = offset; i < offset + limit; i++) {
+        int lastElement = Math.min(offset + limit, relevantPages.size()) - 1;
+        for (int i = offset; i <= lastElement; i++) {
             if (i >= relevantPages.size()) {
                 break;
             }
