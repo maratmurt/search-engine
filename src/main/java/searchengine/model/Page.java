@@ -1,13 +1,14 @@
 package searchengine.model;
 
 import lombok.Data;
+import org.hibernate.annotations.OnDelete;
+import org.hibernate.annotations.OnDeleteAction;
 
 import javax.persistence.*;
-import javax.persistence.Index;
 
 @Data
 @Entity
-@Table(name = "page", indexes = @Index(columnList = "path"))
+@Table(name = "page")
 public class Page {
     @Id
     @Column(name = "id")
@@ -15,6 +16,7 @@ public class Page {
     private int id;
 
     @ManyToOne
+    @OnDelete(action = OnDeleteAction.CASCADE)
     @JoinColumn(name = "site_id", referencedColumnName = "id", nullable = false)
     private Site site;
 
