@@ -1,13 +1,18 @@
-# example values
-
 indexing-settings:
   sites:
-    - url: https://www.lenta.ru
-      name: Лента.ру
-    - url: https://www.skillbox.ru
-      name: Skillbox
-    - url: https://www.playback.ru
-      name: PlayBack.Ru
+    - url: https://nikoartgallery.com
+      name: NikoArtGallery
+    - url: https://ipfran.ru
+      name: IPFRAN
+    - url: https://www.svetlovka.ru
+      name: Svetlovka
+  agents:
+    - Searchify
+    - Findr
+    - Discovera
+    - Inquisit
+    - TruSearch
+    - QuickQuery
 
 server:
   port: 8080
