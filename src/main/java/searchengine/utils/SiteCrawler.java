@@ -41,30 +41,12 @@ public class SiteCrawler extends RecursiveAction {
         try {
             response = parser.getResponse(url);
         } catch (Exception e) {
-            log.error(e.getMessage());
-            return;
+            throw new RuntimeException(e.getMessage());
         }
 
-        Page page = new Page();
+        storePage(response);
 
-        page.setSite(site);
-        page.setPath(path);
-        page.setCode(response.getStatusCodeValue());
-        page.setContent(response.getBody());
-
-        pagesRepository.save(page);
-
-        List<String> links = parser.getLinks(response.getBody());
-
-        List<String> newPaths = new ArrayList<>();
-
-        for (String link : links) {
-            String path = convertToPath(link);
-            if (path != null && !visited.contains(path)) {
-                newPaths.add(path);
-                visited.add(path);
-            }
-        }
+        List<String> newPaths = extractNewPaths(response.getBody());
 
         List<ForkJoinTask<Void>> tasks = new ArrayList<>();
 
@@ -82,7 +64,7 @@ public class SiteCrawler extends RecursiveAction {
             try {
                 task.join();
             } catch (Exception e) {
-                log.error(e.getMessage());
+                throw new RuntimeException(e.getMessage());
             }
         }
 
@@ -92,6 +74,34 @@ public class SiteCrawler extends RecursiveAction {
             sitesRepository.save(site);
             log.info(site.getName() + " INDEXED");
         }
+    }
+
+    private List<String> extractNewPaths(String body) {
+        List<String> links = parser.getLinks(body);
+
+        List<String> newPaths = new ArrayList<>();
+
+        for (String link : links) {
+            String path = convertToPath(link);
+
+            if (path != null && !visited.contains(path)) {
+                newPaths.add(path);
+                visited.add(path);
+            }
+        }
+
+        return newPaths;
+    }
+
+    private void storePage(ResponseEntity<String> response) {
+        Page page = new Page();
+
+        page.setSite(site);
+        page.setPath(path);
+        page.setCode(response.getStatusCodeValue());
+        page.setContent(response.getBody());
+
+        pagesRepository.save(page);
     }
 
     private String convertToPath(String link) {
