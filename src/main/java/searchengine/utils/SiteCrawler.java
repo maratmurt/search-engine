@@ -13,6 +13,7 @@ import searchengine.model.Status;
 import searchengine.repositories.PagesRepository;
 import searchengine.repositories.SitesRepository;
 
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 import java.util.concurrent.ForkJoinTask;
@@ -87,6 +88,7 @@ public class SiteCrawler extends RecursiveAction {
 
         if (path.equals("/")) {
             site.setStatus(Status.INDEXED);
+            site.setStatusTime(LocalDateTime.now());
             sitesRepository.save(site);
             log.info(site.getName() + " INDEXED");
         }
