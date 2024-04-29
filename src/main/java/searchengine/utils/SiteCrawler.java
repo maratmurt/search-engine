@@ -10,8 +10,8 @@ import org.springframework.stereotype.Component;
 import searchengine.model.Page;
 import searchengine.model.Site;
 import searchengine.model.Status;
-import searchengine.repositories.PagesRepository;
 import searchengine.repositories.SitesRepository;
+import searchengine.services.PagesService;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -31,8 +31,8 @@ public class SiteCrawler extends RecursiveAction {
     private List<String> visited;
     private final HtmlParser parser;
     private final ApplicationContext context;
-    private final PagesRepository pagesRepository;
     private final SitesRepository sitesRepository;
+    private final PagesService pagesService;
 
     @Override
     protected void compute() {
@@ -41,7 +41,8 @@ public class SiteCrawler extends RecursiveAction {
         try {
             response = parser.getResponse(url);
         } catch (Exception e) {
-            throw new RuntimeException(e.getMessage());
+            log.error(e.getMessage());
+            return;
         }
 
         storePage(response);
@@ -64,11 +65,12 @@ public class SiteCrawler extends RecursiveAction {
             try {
                 task.join();
             } catch (Exception e) {
-                throw new RuntimeException(e.getMessage());
+                log.error(e.getMessage());
             }
         }
 
         if (path.equals("/")) {
+            pagesService.flush();
             site.setStatus(Status.INDEXED);
             site.setStatusTime(LocalDateTime.now());
             sitesRepository.save(site);
@@ -101,7 +103,7 @@ public class SiteCrawler extends RecursiveAction {
         page.setCode(response.getStatusCodeValue());
         page.setContent(response.getBody());
 
-        pagesRepository.save(page);
+        pagesService.batch(page);
     }
 
     private String convertToPath(String link) {

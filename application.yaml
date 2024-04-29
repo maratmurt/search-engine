@@ -2,10 +2,12 @@ indexing-settings:
   sites:
     - url: https://nikoartgallery.com
       name: NikoArtGallery
-    - url: https://ipfran.ru
-      name: IPFRAN
-    - url: https://www.svetlovka.ru
-      name: Svetlovka
+#    - url: https://ipfran.ru
+#      name: IPFRAN
+#    - url: https://www.svetlovka.ru
+#      name: Svetlovka
+    - url: https://triko.agency
+      name: Triko
   agents:
     - Searchify
     - Findr
@@ -27,5 +29,5 @@ spring:
       hibernate:
         dialect: org.hibernate.dialect.MySQL8Dialect
     hibernate:
-      ddl-auto: update
+      ddl-auto: create
     show-sql: true
