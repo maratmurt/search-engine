@@ -15,7 +15,7 @@ import java.util.List;
 @RequiredArgsConstructor
 public class PagesService {
 
-    private static final int BATCH_SIZE = 50;
+    private static final int BATCH_SIZE = 100;
     private final JdbcTemplate jdbcTemplate;
     private final List<Page> pages = new ArrayList<>();
 

@@ -10,6 +10,7 @@ import searchengine.dto.indexing.IndexingResponse;
 import searchengine.model.Site;
 import searchengine.model.Status;
 import searchengine.repositories.SitesRepository;
+import searchengine.utils.IndexingTasksManager;
 import searchengine.utils.SiteCrawler;
 
 import java.time.LocalDateTime;
@@ -24,6 +25,7 @@ public class IndexingServiceImpl implements IndexingService{
     private final SitesList sitesList;
     private final SitesRepository sitesRepository;
     private final ApplicationContext context;
+    private final IndexingTasksManager indexingTasksManager;
 
     @Override
     public IndexingResponse startIndexing() {
@@ -46,9 +48,16 @@ public class IndexingServiceImpl implements IndexingService{
             crawler.setPath(path);
             crawler.setVisited(visited);
             crawler.setSite(site);
-            crawler.fork();
+            indexingTasksManager.addTask(crawler);
         }
+        new Thread(indexingTasksManager).start();
 
+        return new IndexingResponse();
+    }
+
+    @Override
+    public IndexingResponse stopIndexing() {
+        indexingTasksManager.cancelAllTasks();
         return new IndexingResponse();
     }
 }

@@ -33,9 +33,13 @@ public class SiteCrawler extends RecursiveAction {
     private final ApplicationContext context;
     private final SitesRepository sitesRepository;
     private final PagesService pagesService;
+    private final IndexingTasksManager indexingTasksManager;
 
     @Override
     protected void compute() {
+        if (!indexingTasksManager.isRunning())
+            return;
+
         String url = site.getUrl() + path;
         ResponseEntity<String> response;
         try {
@@ -71,11 +75,20 @@ public class SiteCrawler extends RecursiveAction {
 
         if (path.equals("/")) {
             pagesService.flush();
-            site.setStatus(Status.INDEXED);
-            site.setStatusTime(LocalDateTime.now());
-            sitesRepository.save(site);
-            log.info(site.getName() + " INDEXED");
+            setFinalStatus();
         }
+    }
+
+    private void setFinalStatus() {
+        if (indexingTasksManager.isRunning()) {
+            site.setStatus(Status.INDEXED);
+            log.info(site.getName() + " INDEXED");
+        } else {
+            site.setStatus(Status.FAILED);
+            log.info(site.getName() + " FAILED");
+        }
+        site.setStatusTime(LocalDateTime.now());
+        sitesRepository.save(site);
     }
 
     private List<String> extractNewPaths(String body) {

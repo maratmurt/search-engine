@@ -2,10 +2,10 @@ indexing-settings:
   sites:
     - url: https://nikoartgallery.com
       name: NikoArtGallery
-#    - url: https://ipfran.ru
-#      name: IPFRAN
-#    - url: https://www.svetlovka.ru
-#      name: Svetlovka
+    - url: https://ipfran.ru
+      name: Iprfan
+    - url: https://www.svetlovka.ru
+      name: Svetlovka
     - url: https://triko.agency
       name: Triko
   agents:
