@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import org.springframework.stereotype.Service;
 import searchengine.config.SiteConfig;
 import searchengine.config.SitesList;
+import searchengine.dto.ApiResponse;
 import searchengine.dto.statistics.DetailedStatisticsItem;
 import searchengine.dto.statistics.StatisticsData;
 import searchengine.dto.statistics.StatisticsResponse;
@@ -21,7 +22,7 @@ public class StatisticsServiceImpl implements StatisticsService {
     private final SitesList sites;
 
     @Override
-    public StatisticsResponse getStatistics() {
+    public ApiResponse getStatistics() {
         String[] statuses = { "INDEXED", "FAILED", "INDEXING" };
         String[] errors = {
                 "Ошибка индексации: главная страница сайта не доступна",

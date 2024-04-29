@@ -1,8 +1,10 @@
 package searchengine.dto.indexing;
 
-import lombok.Data;
+import lombok.Getter;
+import lombok.Setter;
+import searchengine.dto.ApiResponse;
 
-@Data
-public class IndexingResponse {
-    private boolean result = true;
+@Getter
+@Setter
+public class IndexingResponse extends ApiResponse {
 }

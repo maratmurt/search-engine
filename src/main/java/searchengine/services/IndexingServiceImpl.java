@@ -6,6 +6,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.stereotype.Service;
 import searchengine.config.SiteConfig;
 import searchengine.config.SitesList;
+import searchengine.dto.ApiResponse;
+import searchengine.dto.ErrorResponse;
 import searchengine.dto.indexing.IndexingResponse;
 import searchengine.model.Site;
 import searchengine.model.Status;
@@ -28,7 +30,10 @@ public class IndexingServiceImpl implements IndexingService{
     private final IndexingTasksManager indexingTasksManager;
 
     @Override
-    public IndexingResponse startIndexing() {
+    public ApiResponse startIndexing() {
+        if (indexingTasksManager.isRunning())
+            return new ErrorResponse("Индексация уже запущена");
+
         for (SiteConfig siteConfig : sitesList.getSites()) {
             sitesRepository.findByUrl(siteConfig.getUrl()).ifPresent(sitesRepository::delete);
 
@@ -52,12 +57,20 @@ public class IndexingServiceImpl implements IndexingService{
         }
         new Thread(indexingTasksManager).start();
 
-        return new IndexingResponse();
+        IndexingResponse response = new IndexingResponse();
+        response.setResult(true);
+        return response;
     }
 
     @Override
-    public IndexingResponse stopIndexing() {
+    public ApiResponse stopIndexing() {
+        if (!indexingTasksManager.isRunning())
+            return new ErrorResponse("Индексация не запущена");
+
         indexingTasksManager.cancelAllTasks();
-        return new IndexingResponse();
+
+        IndexingResponse response = new IndexingResponse();
+        response.setResult(true);
+        return response;
     }
 }
