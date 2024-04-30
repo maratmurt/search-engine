@@ -16,8 +16,8 @@ import searchengine.utils.IndexingTasksManager;
 import searchengine.utils.SiteCrawler;
 
 import java.time.LocalDateTime;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 
 @Slf4j
 @Service
@@ -50,7 +50,7 @@ public class IndexingServiceImpl implements IndexingService{
 
             SiteCrawler crawler = context.getBean(SiteCrawler.class);
             String path = "/";
-            List<String> visited = new CopyOnWriteArrayList<>();
+            List<String> visited = new ArrayList<>();
             visited.add(path);
             crawler.setPath(path);
             crawler.setVisited(visited);

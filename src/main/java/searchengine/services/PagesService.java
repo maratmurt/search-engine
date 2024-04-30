@@ -27,7 +27,7 @@ public class PagesService {
         }
     }
 
-    public void flush() {
+    public synchronized void flush() {
         String sql = "INSERT INTO page(code, content, path, site_id) VALUES(?, ?, ?, ?)";
 
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
