@@ -8,7 +8,7 @@ import javax.persistence.*;
 
 @Data
 @Entity
-@Table(name = "page")
+@Table(name = "page", uniqueConstraints = @UniqueConstraint(columnNames = {"path", "site_id"}))
 public class Page {
     @Id
     @Column(name = "id")

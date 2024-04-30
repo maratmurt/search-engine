@@ -98,9 +98,11 @@ public class SiteCrawler extends RecursiveAction {
         for (String link : links) {
             String path = convertToPath(link);
 
-            if (path != null && !visited.contains(path)) {
-                newPaths.add(path);
-                visited.add(path);
+            synchronized (visited) {
+                if (path != null && !visited.contains(path)) {
+                    newPaths.add(path);
+                    visited.add(path);
+                }
             }
         }
 
