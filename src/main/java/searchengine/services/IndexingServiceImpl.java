@@ -48,7 +48,7 @@ public class IndexingServiceImpl implements IndexingService{
 
             SiteCrawler crawler = context.getBean(SiteCrawler.class);
             String path = "/";
-            List<String> visited = new ArrayList<>();
+            List<String> visited = new CopyOnWriteArrayList<>();
             visited.add(path);
             crawler.setPath(path);
             crawler.setVisited(visited);
