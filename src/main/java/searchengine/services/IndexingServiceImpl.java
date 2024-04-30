@@ -18,6 +18,7 @@ import searchengine.utils.SiteCrawler;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 
 @Slf4j
 @Service
@@ -27,12 +28,14 @@ public class IndexingServiceImpl implements IndexingService{
     private final SitesList sitesList;
     private final SitesRepository sitesRepository;
     private final ApplicationContext context;
-    private final IndexingTasksManager indexingTasksManager;
+    private final IndexingTasksManager tasksManager;
 
     @Override
     public ApiResponse startIndexing() {
-        if (indexingTasksManager.isRunning())
+        if (tasksManager.isRunning())
             return new ErrorResponse("Индексация уже запущена");
+
+        tasksManager.initialize();
 
         for (SiteConfig siteConfig : sitesList.getSites()) {
             sitesRepository.findByUrl(siteConfig.getUrl()).ifPresent(sitesRepository::delete);
@@ -53,9 +56,9 @@ public class IndexingServiceImpl implements IndexingService{
             crawler.setPath(path);
             crawler.setVisited(visited);
             crawler.setSite(site);
-            indexingTasksManager.addTask(crawler);
+            tasksManager.addTask(crawler);
         }
-        new Thread(indexingTasksManager).start();
+        new Thread(tasksManager).start();
 
         IndexingResponse response = new IndexingResponse();
         response.setResult(true);
@@ -64,10 +67,10 @@ public class IndexingServiceImpl implements IndexingService{
 
     @Override
     public ApiResponse stopIndexing() {
-        if (!indexingTasksManager.isRunning())
+        if (!tasksManager.isRunning())
             return new ErrorResponse("Индексация не запущена");
 
-        indexingTasksManager.cancelAllTasks();
+        tasksManager.cancelAllTasks();
 
         IndexingResponse response = new IndexingResponse();
         response.setResult(true);

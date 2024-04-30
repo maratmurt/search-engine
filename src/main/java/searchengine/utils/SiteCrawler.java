@@ -1,5 +1,6 @@
 package searchengine.utils;
 
+import lombok.Getter;
 import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
@@ -20,6 +21,7 @@ import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveAction;
 
 @Slf4j
+@Getter
 @Setter
 @Component
 @Scope("prototype")
@@ -33,13 +35,10 @@ public class SiteCrawler extends RecursiveAction {
     private final ApplicationContext context;
     private final SitesRepository sitesRepository;
     private final PagesService pagesService;
-    private final IndexingTasksManager indexingTasksManager;
+    private final IndexingTasksManager tasksManager;
 
     @Override
     protected void compute() {
-        if (!indexingTasksManager.isRunning())
-            return;
-
         String url = site.getUrl() + path;
         ResponseEntity<String> response;
         try {
@@ -61,8 +60,8 @@ public class SiteCrawler extends RecursiveAction {
             crawler.setSite(site);
             crawler.setPath(path);
             crawler.setVisited(visited);
-            crawler.fork();
-            tasks.add(crawler);
+            ForkJoinTask<Void> task = tasksManager.addTask(crawler);
+            tasks.add(task);
         }
 
         for (ForkJoinTask<Void> task : tasks) {
@@ -80,7 +79,7 @@ public class SiteCrawler extends RecursiveAction {
     }
 
     private void setFinalStatus() {
-        if (indexingTasksManager.isRunning()) {
+        if (tasksManager.isRunning()) {
             site.setStatus(Status.INDEXED);
             log.info(site.getName() + " INDEXED");
         } else {
