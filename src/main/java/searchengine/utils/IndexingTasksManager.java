@@ -29,6 +29,8 @@ public class IndexingTasksManager implements Runnable {
 
         pool.shutdown();
 
+        log.info("FINISHED");
+
         running = false;
     }
 
@@ -49,7 +51,7 @@ public class IndexingTasksManager implements Runnable {
     }
 
     public void initialize() {
-        pool = new ForkJoinPool(32);
+        pool = new ForkJoinPool(8);
         log.info("Pool created");
     }
 }
