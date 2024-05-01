@@ -4,8 +4,6 @@ indexing-settings:
       name: NikoArtGallery
     - url: https://ipfran.ru
       name: Iprfan
-#    - url: https://dimonvideo.ru
-#      name: DimonVideo
     - url: https://www.svetlovka.ru
       name: Svetlovka
     - url: https://triko.agency
@@ -17,6 +15,8 @@ indexing-settings:
     - Inquisit
     - TruSearch
     - QuickQuery
+  batch_size: 30
+  parallelism: 32
 
 server:
   port: 8080

@@ -1,6 +1,8 @@
 package searchengine.services;
 
 import lombok.RequiredArgsConstructor;
+import org.springframework.beans.factory.annotation.Value;
+import org.springframework.boot.context.properties.ConfigurationProperties;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
@@ -14,15 +16,16 @@ import java.util.List;
 @Service
 @RequiredArgsConstructor
 public class PagesService {
+    @Value("${indexing-settings.batch_size}")
+    private int batchSize;
 
-    private static final int BATCH_SIZE = 100;
     private final JdbcTemplate jdbcTemplate;
     private final List<Page> pages = new ArrayList<>();
 
     public synchronized void batch(Page page) {
         pages.add(page);
 
-        if (pages.size() >= BATCH_SIZE) {
+        if (pages.size() >= batchSize) {
             flush();
         }
     }
