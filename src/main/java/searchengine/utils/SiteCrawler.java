@@ -12,7 +12,7 @@ import searchengine.model.Page;
 import searchengine.model.Site;
 import searchengine.model.Status;
 import searchengine.repositories.SitesRepository;
-import searchengine.services.PagesService;
+import searchengine.dao.PageDao;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -34,7 +34,7 @@ public class SiteCrawler extends RecursiveAction {
     private final HtmlParser parser;
     private final ApplicationContext context;
     private final SitesRepository sitesRepository;
-    private final PagesService pagesService;
+    private final PageDao pagesService;
     private final IndexingTasksManager tasksManager;
 
     @Override
