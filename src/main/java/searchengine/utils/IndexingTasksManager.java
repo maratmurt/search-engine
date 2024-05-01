@@ -3,12 +3,12 @@ package searchengine.utils;
 import lombok.Getter;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
-import org.springframework.boot.context.properties.ConfigurationProperties;
+import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 
@@ -16,11 +16,12 @@ import java.util.concurrent.ForkJoinTask;
 @Getter
 @Setter
 @Component
-@ConfigurationProperties(prefix = "indexing-settings")
 public class IndexingTasksManager implements Runnable {
     private boolean running = false;
-    private List<ForkJoinTask<Void>> tasks = new CopyOnWriteArrayList<>();
+    private List<ForkJoinTask<Void>> tasks = new ArrayList<>();
     private ForkJoinPool pool;
+
+    @Value("${indexing-settings.parallelism}")
     private int parallelism;
 
     @Override
@@ -63,6 +64,5 @@ public class IndexingTasksManager implements Runnable {
 
     public void initialize() {
         pool = new ForkJoinPool(parallelism);
-        log.info("Pool created");
     }
 }
