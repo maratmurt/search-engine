@@ -34,9 +34,11 @@ public class IndexingServiceImpl implements IndexingService{
         if (tasksManager.isRunning())
             return new ErrorResponse("Индексация уже запущена");
 
-        tasksManager.initialize();
+        List<SiteConfig> configList = sitesList.getSites();
 
-        for (SiteConfig siteConfig : sitesList.getSites()) {
+        tasksManager.initialize(configList.size());
+
+        for (SiteConfig siteConfig : configList) {
             sitesRepository.findByUrl(siteConfig.getUrl()).ifPresent(sitesRepository::delete);
 
             Site site = new Site();
@@ -55,7 +57,7 @@ public class IndexingServiceImpl implements IndexingService{
             crawler.setPath(path);
             crawler.setVisited(visited);
             crawler.setSite(site);
-            tasksManager.addTask(crawler);
+            tasksManager.queueTask(crawler);
         }
         new Thread(tasksManager).start();
 
@@ -69,7 +71,7 @@ public class IndexingServiceImpl implements IndexingService{
         if (!tasksManager.isRunning())
             return new ErrorResponse("Индексация не запущена");
 
-        tasksManager.cancelAllTasks();
+        tasksManager.abort();
 
         IndexingResponse response = new IndexingResponse();
         response.setResult(true);

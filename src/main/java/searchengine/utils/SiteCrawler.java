@@ -10,14 +10,11 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import searchengine.model.Page;
 import searchengine.model.Site;
-import searchengine.model.Status;
 import searchengine.repositories.SitesRepository;
 import searchengine.services.PagesService;
 
-import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveAction;
 
 @Slf4j
@@ -52,42 +49,16 @@ public class SiteCrawler extends RecursiveAction {
 
         List<String> newPaths = extractNewPaths(response.getBody());
 
-        List<ForkJoinTask<Void>> tasks = new ArrayList<>();
-
         for (String path : newPaths) {
             log.info(site.getName() + " " + path);
             SiteCrawler crawler = context.getBean(SiteCrawler.class);
             crawler.setSite(site);
             crawler.setPath(path);
             crawler.setVisited(visited);
-            ForkJoinTask<Void> task = tasksManager.addTask(crawler);
-            tasks.add(task);
+            tasksManager.queueTask(crawler);
         }
 
-        for (ForkJoinTask<Void> task : tasks) {
-            try {
-                task.join();
-            } catch (Exception e) {
-                log.error(e.getMessage());
-            }
-        }
-
-        if (path.equals("/")) {
-            pagesService.flush();
-            setFinalStatus();
-        }
-    }
-
-    private void setFinalStatus() {
-        if (tasksManager.isRunning()) {
-            site.setStatus(Status.INDEXED);
-            log.info(site.getName() + " INDEXED");
-        } else {
-            site.setStatus(Status.FAILED);
-            log.info(site.getName() + " FAILED");
-        }
-        site.setStatusTime(LocalDateTime.now());
-        sitesRepository.save(site);
+        log.info(url + " saved");
     }
 
     private List<String> extractNewPaths(String body) {
