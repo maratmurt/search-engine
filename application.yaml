@@ -6,8 +6,6 @@ indexing-settings:
       name: Iprfan
     - url: https://www.svetlovka.ru
       name: Svetlovka
-    - url: https://triko.agency
-      name: Triko
   agents:
     - Searchify
     - Findr
@@ -26,6 +24,7 @@ spring:
     username: root
     password: testtest
     url: jdbc:mysql://localhost:3306/search_engine?useSSL=false&requireSSL=false&allowPublicKeyRetrieval=true
+    driver_classname: com.mysql.cj.jdbc.Driver
   jpa:
     properties:
       hibernate:
