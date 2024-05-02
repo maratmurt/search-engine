@@ -121,13 +121,13 @@ public class SiteCrawler extends RecursiveAction {
     }
 
     private String convertToPath(String link) {
-        String siteUrl = site.getUrl();
-        String urlRegex = "(" + siteUrl + ")[\\w-/.]+$";
-        String pathRegex = "^/[\\w-]+[\\w-/]*(/|(\\.html))?$";
+        String rootUrl = site.getUrl();
+        String urlRegex = "^(" + rootUrl + ")[\\w-/]+(\\.html)?$";
+        String pathRegex = "^/[\\w-]+[\\w-/]*(\\.html)?$";
 
         String path;
         if (link.matches(urlRegex)) {
-            path = link.substring(siteUrl.length() - 1);
+            path = link.substring(rootUrl.length());
         } else if (link.matches(pathRegex)) {
             path = link;
         } else {
