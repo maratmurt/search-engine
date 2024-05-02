@@ -34,7 +34,7 @@ public class SiteCrawler extends RecursiveAction {
     private final HtmlParser parser;
     private final ApplicationContext context;
     private final SitesRepository sitesRepository;
-    private final PageDao pagesService;
+    private final PageDao pageDao;
     private final IndexingTasksManager tasksManager;
 
     @Override
@@ -60,7 +60,7 @@ public class SiteCrawler extends RecursiveAction {
             crawler.setSite(site);
             crawler.setPath(path);
             crawler.setVisited(visited);
-            ForkJoinTask<Void> task = tasksManager.addTask(crawler);
+            ForkJoinTask<Void> task = tasksManager.submitTask(crawler);
             tasks.add(task);
         }
 
@@ -73,7 +73,7 @@ public class SiteCrawler extends RecursiveAction {
         }
 
         if (path.equals("/")) {
-            pagesService.flush();
+            pageDao.flush();
             setFinalStatus();
         }
     }
@@ -117,7 +117,7 @@ public class SiteCrawler extends RecursiveAction {
         page.setCode(response.getStatusCodeValue());
         page.setContent(response.getBody());
 
-        pagesService.batch(page);
+        pageDao.batch(page);
     }
 
     private String convertToPath(String link) {

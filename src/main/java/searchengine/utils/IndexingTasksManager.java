@@ -7,8 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
-import java.util.ArrayList;
 import java.util.List;
+import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 
@@ -18,11 +18,11 @@ import java.util.concurrent.ForkJoinTask;
 @Component
 public class IndexingTasksManager implements Runnable {
     private boolean running = false;
-    private List<ForkJoinTask<Void>> tasks = new ArrayList<>();
+    private List<ForkJoinTask<Void>> tasks = new CopyOnWriteArrayList<>();
     private ForkJoinPool pool;
 
-    @Value("${indexing-settings.parallelism}")
-    private int parallelism;
+    @Value("${indexing-settings.thread_multiplier}")
+    private int threadMultiplier;
 
     @Override
     public void run() {
@@ -46,16 +46,16 @@ public class IndexingTasksManager implements Runnable {
         running = false;
     }
 
-    public void cancelAllTasks() {
+    public void abort() {
         running = false;
 
         tasks.forEach(task -> task.cancel(true));
-        pool.shutdownNow();
-
         tasks.clear();
+
+        pool.shutdownNow();
     }
 
-    public synchronized ForkJoinTask<Void> addTask(SiteCrawler crawler) {
+    public synchronized ForkJoinTask<Void> submitTask(SiteCrawler crawler) {
         ForkJoinTask<Void> task = pool.submit(crawler);
         tasks.add(task);
         log.info("Task " + crawler.getSite().getUrl() + crawler.getPath() + " submitted. Tasks count = " + tasks.size());
@@ -63,6 +63,8 @@ public class IndexingTasksManager implements Runnable {
     }
 
     public void initialize() {
+        int parallelism = Runtime.getRuntime().availableProcessors() * threadMultiplier;
+        log.info("ForkJoinPool parallelism = " + parallelism);
         pool = new ForkJoinPool(parallelism);
     }
 }

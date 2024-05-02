@@ -15,8 +15,8 @@ indexing-settings:
     - Inquisit
     - TruSearch
     - QuickQuery
-  batch_size: 30
-  parallelism: 32
+  batch_size: 100
+  thread_multiplier: 4
 
 server:
   port: 8080

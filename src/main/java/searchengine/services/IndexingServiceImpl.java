@@ -55,7 +55,7 @@ public class IndexingServiceImpl implements IndexingService{
             crawler.setPath(path);
             crawler.setVisited(visited);
             crawler.setSite(site);
-            tasksManager.addTask(crawler);
+            tasksManager.submitTask(crawler);
         }
         new Thread(tasksManager).start();
 
@@ -69,7 +69,7 @@ public class IndexingServiceImpl implements IndexingService{
         if (!tasksManager.isRunning())
             return new ErrorResponse("Индексация не запущена");
 
-        tasksManager.cancelAllTasks();
+        tasksManager.abort();
 
         IndexingResponse response = new IndexingResponse();
         response.setResult(true);
