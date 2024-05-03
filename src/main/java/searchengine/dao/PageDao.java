@@ -6,9 +6,13 @@ import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
 import searchengine.model.Page;
+import searchengine.model.Site;
+import searchengine.model.Status;
+import searchengine.repositories.SitesRepository;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
+import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
 
@@ -20,12 +24,17 @@ public class PageDao {
 
     private final JdbcTemplate jdbcTemplate;
     private final List<Page> pages = new ArrayList<>();
+    private final SitesRepository sitesRepository;
 
     public synchronized void batch(Page page) {
         pages.add(page);
 
         if (pages.size() >= batchSize) {
             flush();
+
+            List<Site> sites = sitesRepository.findAllByStatus(Status.INDEXING);
+            sites.forEach(site -> site.setStatusTime(LocalDateTime.now()));
+            sitesRepository.saveAll(sites);
         }
     }
 
