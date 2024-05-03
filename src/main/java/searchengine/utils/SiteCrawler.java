@@ -45,6 +45,12 @@ public class SiteCrawler extends RecursiveAction {
             response = parser.getResponse(url);
         } catch (Exception e) {
             log.error(e.getMessage());
+            if (path.equals("/")) {
+                site.setStatus(Status.FAILED);
+                site.setLastError("Главная страница не доступна");
+                site.setStatusTime(LocalDateTime.now());
+                site = sitesRepository.save(site);
+            }
             return;
         }
 
@@ -84,6 +90,7 @@ public class SiteCrawler extends RecursiveAction {
             log.info(site.getName() + " INDEXED");
         } else {
             site.setStatus(Status.FAILED);
+            site.setLastError("Индексация остановлена пользователем");
             log.info(site.getName() + " FAILED");
         }
         site.setStatusTime(LocalDateTime.now());
