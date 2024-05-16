@@ -1,9 +1,9 @@
 indexing-settings:
   sites:
-    - url: https://nikoartgallery.com
-      name: NikoArtGallery
-    - url: https://ipfran.ru
-      name: Iprfan
+    - url: https://dimonvideo.ru
+      name: Dimonvideo
+    - url: http://www.playback.ru
+      name: Playback
     - url: https://www.svetlovka.ru
       name: Svetlovka
   agents:
@@ -13,7 +13,7 @@ indexing-settings:
     - Inquisit
     - TruSearch
     - QuickQuery
-  batch_size: 100
+  batch_size: 1000
   thread_multiplier: 4
 
 server:

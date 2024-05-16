@@ -17,6 +17,7 @@ import searchengine.dao.PageDao;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Set;
 import java.util.concurrent.ForkJoinTask;
 import java.util.concurrent.RecursiveAction;
 
@@ -30,7 +31,7 @@ public class SiteCrawler extends RecursiveAction {
 
     private Site site;
     private String path;
-    private List<String> visited;
+    private Set<String> visited;
     private final HtmlParser parser;
     private final ApplicationContext context;
     private final SitesRepository sitesRepository;
@@ -106,10 +107,8 @@ public class SiteCrawler extends RecursiveAction {
             String path = convertToPath(link);
 
             synchronized (visited) {
-                if (path != null && !visited.contains(path)) {
+                if (path != null && visited.add(path))
                     newPaths.add(path);
-                    visited.add(path);
-                }
             }
         }
 
