@@ -58,7 +58,7 @@ public class IndexingTasksManager implements Runnable {
     public synchronized ForkJoinTask<Void> submitTask(SiteCrawler crawler) {
         ForkJoinTask<Void> task = pool.submit(crawler);
         tasks.add(task);
-        log.info("Task " + crawler.getSite().getUrl() + crawler.getPath() + " submitted. Tasks count = " + tasks.size());
+        log.info("Task " + crawler.getSite().getUrl() + crawler.getSourcePath() + " submitted. Tasks count = " + tasks.size());
         return task;
     }
 

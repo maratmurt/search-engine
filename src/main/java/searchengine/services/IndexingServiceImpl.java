@@ -52,7 +52,7 @@ public class IndexingServiceImpl implements IndexingService{
             String path = "/";
             Set<String> visited = ConcurrentHashMap.newKeySet();
             visited.add(path);
-            crawler.setPath(path);
+            crawler.setSourcePath(path);
             crawler.setVisited(visited);
             crawler.setSite(site);
             tasksManager.submitTask(crawler);

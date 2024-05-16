@@ -30,7 +30,7 @@ import java.util.concurrent.RecursiveAction;
 public class SiteCrawler extends RecursiveAction {
 
     private Site site;
-    private String path;
+    private String sourcePath;
     private Set<String> visited;
     private final HtmlParser parser;
     private final ApplicationContext context;
@@ -40,13 +40,13 @@ public class SiteCrawler extends RecursiveAction {
 
     @Override
     protected void compute() {
-        String url = site.getUrl() + path;
+        String url = site.getUrl() + sourcePath;
         ResponseEntity<String> response;
         try {
             response = parser.getResponse(url);
         } catch (Exception e) {
             log.error(e.getMessage());
-            if (path.equals("/")) {
+            if (sourcePath.equals("/")) {
                 site.setStatus(Status.FAILED);
                 site.setLastError("Главная страница не доступна");
                 site.setStatusTime(LocalDateTime.now());
@@ -65,7 +65,7 @@ public class SiteCrawler extends RecursiveAction {
             log.info(site.getName() + " " + path);
             SiteCrawler crawler = context.getBean(SiteCrawler.class);
             crawler.setSite(site);
-            crawler.setPath(path);
+            crawler.setSourcePath(path);
             crawler.setVisited(visited);
             ForkJoinTask<Void> task = tasksManager.submitTask(crawler);
             tasks.add(task);
@@ -79,7 +79,7 @@ public class SiteCrawler extends RecursiveAction {
             }
         }
 
-        if (path.equals("/")) {
+        if (sourcePath.equals("/")) {
             pageDao.flush();
             setFinalStatus();
         }
@@ -119,7 +119,7 @@ public class SiteCrawler extends RecursiveAction {
         Page page = new Page();
 
         page.setSite(site);
-        page.setPath(path);
+        page.setPath(sourcePath);
         page.setCode(response.getStatusCodeValue());
         page.setContent(response.getBody());
 
