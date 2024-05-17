@@ -31,7 +31,13 @@ public class IndexingTasksManager implements Runnable {
         long start = System.currentTimeMillis();
 
         while (!tasks.isEmpty()) {
-            tasks.removeIf(ForkJoinTask::isDone);
+            for (int i = 0; i < tasks.size(); i++) {
+                ForkJoinTask<Void> task = tasks.get(i);
+                if (task.isDone()) {
+                    tasks.remove(task);
+                    log.info("Removed completed task. Tasks count = " + tasks.size());
+                }
+            }
         }
 
         pool.shutdown();
