@@ -7,8 +7,8 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.stereotype.Component;
 
 import java.time.Duration;
+import java.util.ArrayList;
 import java.util.List;
-import java.util.concurrent.CopyOnWriteArrayList;
 import java.util.concurrent.ForkJoinPool;
 import java.util.concurrent.ForkJoinTask;
 
@@ -18,7 +18,7 @@ import java.util.concurrent.ForkJoinTask;
 @Component
 public class IndexingTasksManager implements Runnable {
     private boolean running = false;
-    private List<ForkJoinTask<Void>> tasks = new CopyOnWriteArrayList<>();
+    private List<ForkJoinTask<Void>> tasks = new ArrayList<>();
     private ForkJoinPool pool;
 
     @Value("${indexing-settings.thread_multiplier}")

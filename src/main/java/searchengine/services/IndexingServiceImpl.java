@@ -16,8 +16,8 @@ import searchengine.utils.IndexingTasksManager;
 import searchengine.utils.SiteCrawler;
 
 import java.time.LocalDateTime;
+import java.util.HashSet;
 import java.util.Set;
-import java.util.concurrent.ConcurrentHashMap;
 
 @Slf4j
 @Service
@@ -50,7 +50,7 @@ public class IndexingServiceImpl implements IndexingService{
 
             SiteCrawler crawler = context.getBean(SiteCrawler.class);
             String path = "/";
-            Set<String> visited = ConcurrentHashMap.newKeySet();
+            Set<String> visited = new HashSet<>();
             visited.add(path);
             crawler.setSourcePath(path);
             crawler.setVisited(visited);
