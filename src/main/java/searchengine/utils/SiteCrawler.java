@@ -133,9 +133,9 @@ public class SiteCrawler extends RecursiveAction {
 
         String path;
         if (link.matches(urlRegex)) {
-            path = link.substring(rootUrl.length());
+            path = link.substring(rootUrl.length()).toLowerCase();
         } else if (link.matches(pathRegex)) {
-            path = link;
+            path = link.toLowerCase();
         } else {
             return null;
         }
