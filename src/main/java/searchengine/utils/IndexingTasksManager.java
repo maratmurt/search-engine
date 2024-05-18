@@ -30,7 +30,7 @@ public class IndexingTasksManager implements Runnable {
 
         long start = System.currentTimeMillis();
 
-        while (!tasks.isEmpty()) {
+        while (!tasks.isEmpty() && running) {
             for (int i = 0; i < tasks.size(); i++) {
                 ForkJoinTask<Void> task = tasks.get(i);
                 if (task.isDone()) {
