@@ -6,4 +6,6 @@ public interface IndexingService {
     ApiResponse startIndexing();
 
     ApiResponse stopIndexing();
+
+    ApiResponse indexPage(String url);
 }

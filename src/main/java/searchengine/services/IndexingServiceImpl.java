@@ -3,21 +3,30 @@ package searchengine.services;
 import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.ApplicationContext;
+import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import searchengine.config.SiteConfig;
 import searchengine.config.SitesList;
 import searchengine.dto.ApiResponse;
 import searchengine.dto.ErrorResponse;
 import searchengine.dto.indexing.IndexingResponse;
+import searchengine.model.Page;
 import searchengine.model.Site;
 import searchengine.model.Status;
+import searchengine.repositories.PagesRepository;
 import searchengine.repositories.SitesRepository;
+import searchengine.utils.HtmlParser;
 import searchengine.utils.IndexingTasksManager;
 import searchengine.utils.SiteCrawler;
 
+import java.net.URLDecoder;
+import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Optional;
 import java.util.Set;
+import java.util.regex.Matcher;
+import java.util.regex.Pattern;
 
 @Slf4j
 @Service
@@ -28,6 +37,8 @@ public class IndexingServiceImpl implements IndexingService{
     private final SitesRepository sitesRepository;
     private final ApplicationContext context;
     private final IndexingTasksManager tasksManager;
+    private final HtmlParser parser;
+    private final PagesRepository pagesRepository;
 
     @Override
     public ApiResponse startIndexing() {
@@ -70,6 +81,62 @@ public class IndexingServiceImpl implements IndexingService{
             return new ErrorResponse("Индексация не запущена");
 
         tasksManager.abort();
+
+        IndexingResponse response = new IndexingResponse();
+        response.setResult(true);
+        return response;
+    }
+
+    @Override
+    public ApiResponse indexPage(String url) {
+        url = URLDecoder.decode(url, StandardCharsets.UTF_8);
+
+        Matcher rootMatch = Pattern.compile("http(s?)://[\\w-.]+").matcher(url);
+        String rootUrl;
+        if (rootMatch.find()) {
+            rootUrl = rootMatch.group();
+        } else {
+            return new ErrorResponse("Введён некорректный адрес страницы");
+        }
+
+        SiteConfig matchSiteConfig = null;
+        for (SiteConfig siteConfig : sitesList.getSites()) {
+            if (url.contains(siteConfig.getUrl())) {
+                matchSiteConfig = siteConfig;
+                break;
+            }
+        }
+        if (matchSiteConfig == null) {
+            return new ErrorResponse("Данная страница находится за пределами сайтов, указанных в конфигурационном файле");
+        }
+
+        Site site;
+        Optional<Site> existingSite = sitesRepository.findByUrl(rootUrl);
+        if (existingSite.isPresent()) {
+            site = existingSite.get();
+        } else {
+            site = new Site();
+            site.setUrl(matchSiteConfig.getUrl());
+            site.setName(matchSiteConfig.getName());
+            site.setStatusTime(LocalDateTime.now());
+            site = sitesRepository.save(site);
+        }
+
+        String path = url.substring(rootUrl.length());
+        pagesRepository.findBySiteAndPath(site, path).ifPresent(pagesRepository::delete);
+
+        ResponseEntity<String> pageResponse;
+        try {
+            pageResponse = parser.getResponse(url);
+        } catch (Exception e) {
+            return new ErrorResponse(e.getLocalizedMessage());
+        }
+        Page page = new Page();
+        page.setSite(site);
+        page.setPath(path);
+        page.setCode(pageResponse.getStatusCodeValue());
+        page.setContent(pageResponse.getBody());
+        page = pagesRepository.save(page);
 
         IndexingResponse response = new IndexingResponse();
         response.setResult(true);
