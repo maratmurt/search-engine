@@ -17,12 +17,14 @@ import searchengine.repositories.PagesRepository;
 import searchengine.repositories.SitesRepository;
 import searchengine.utils.HtmlParser;
 import searchengine.utils.IndexingTasksManager;
+import searchengine.utils.Lemmatizer;
 import searchengine.utils.SiteCrawler;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -39,6 +41,7 @@ public class IndexingServiceImpl implements IndexingService{
     private final IndexingTasksManager tasksManager;
     private final HtmlParser parser;
     private final PagesRepository pagesRepository;
+    private final Lemmatizer lemmatizer;
 
     @Override
     public ApiResponse startIndexing() {
@@ -137,6 +140,9 @@ public class IndexingServiceImpl implements IndexingService{
         page.setCode(pageResponse.getStatusCodeValue());
         page.setContent(pageResponse.getBody());
         page = pagesRepository.save(page);
+
+        String text = parser.getText(page.getContent());
+        Map<String, Integer> lemmaRankMap = lemmatizer.buildLemmaRankMap(text);
 
         IndexingResponse response = new IndexingResponse();
         response.setResult(true);

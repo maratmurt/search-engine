@@ -37,4 +37,8 @@ public class HtmlParser {
         elements.forEach(element -> links.add(element.attr("href")));
         return new ArrayList<>(links);
     }
+
+    public String getText(String body) {
+        return Jsoup.parse(body).text();
+    }
 }
