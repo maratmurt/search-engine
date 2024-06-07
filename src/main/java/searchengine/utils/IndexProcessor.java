@@ -42,8 +42,8 @@ public class IndexProcessor extends Thread {
             List<String> lemmas = lemmaRankMap.keySet().stream().toList();
 
             // update existing lemmas
-            String selectSql = "SELECT * FROM lemma WHERE lemma.lemma IN ('" + String.join("', '", lemmas) + "') AND lemma.site_id=" + siteId;
-            List<LemmaDto> existingLemmaDtos = jdbcTemplate.query(selectSql, new LemmaRowMapper());
+            String sql = "SELECT * FROM lemma WHERE lemma.lemma IN ('" + String.join("', '", lemmas) + "') AND lemma.site_id=" + siteId;
+            List<LemmaDto> existingLemmaDtos = jdbcTemplate.query(sql, new LemmaRowMapper());
             existingLemmaDtos.forEach(lemma -> lemma.setFrequency(lemma.getFrequency() + 1));
             String updateSql = "UPDATE lemma SET lemma.frequency=? WHERE lemma.lemma=?";
             jdbcTemplate.batchUpdate(updateSql, new BatchPreparedStatementSetter() {
@@ -63,8 +63,8 @@ public class IndexProcessor extends Thread {
             // insert new lemmas
             List<String> existingLemmas = existingLemmaDtos.stream().map(LemmaDto::getLemma).toList();
             List<String> newLemmas = lemmas.stream().filter(lemma -> !existingLemmas.contains(lemma)).toList();
-            String insertSql = "INSERT INTO lemma(lemma, site_id, frequency) VALUES(?, ?, ?)";
-            jdbcTemplate.batchUpdate(insertSql, new BatchPreparedStatementSetter() {
+            sql = "INSERT INTO lemma(lemma, site_id, frequency) VALUES(?, ?, ?)";
+            jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
                 @Override
                 public void setValues(PreparedStatement ps, int i) throws SQLException {
                     ps.setString(1, newLemmas.get(i));
@@ -75,6 +75,26 @@ public class IndexProcessor extends Thread {
                 @Override
                 public int getBatchSize() {
                     return newLemmas.size();
+                }
+            });
+
+            // insert indexes
+            sql = "SELECT * FROM lemma WHERE lemma.lemma IN ('" + String.join("' ,'", lemmas) + "') AND lemma.site_id=" + siteId;
+            List<LemmaDto> lemmaDtos = jdbcTemplate.query(sql, new LemmaRowMapper());
+            jdbcTemplate.batchUpdate("INSERT INTO search_engine.index(lemma_id, page_id, search_engine.index.rank) VALUES(?, ?, ?)", new BatchPreparedStatementSetter() {
+                @Override
+                public void setValues(PreparedStatement ps, int i) throws SQLException {
+                    LemmaDto lemmaDto = lemmaDtos.get(i);
+                    double rank = lemmaRankMap.get(lemmaDto.getLemma());
+
+                    ps.setInt(1, lemmaDto.getId());
+                    ps.setInt(2, page.getId());
+                    ps.setDouble(3, rank);
+                }
+
+                @Override
+                public int getBatchSize() {
+                    return lemmaDtos.size();
                 }
             });
         }
