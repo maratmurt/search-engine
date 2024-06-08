@@ -142,7 +142,7 @@ public class IndexingServiceImpl implements IndexingService{
         page = pagesRepository.save(page);
 
         String text = parser.getText(page.getContent());
-        Map<String, Integer> lemmaRankMap = lemmatizer.buildLemmaRankMap(text);
+        Map<String, Double> lemmaRankMap = lemmatizer.buildLemmaRankMap(text);
 
         IndexingResponse response = new IndexingResponse();
         response.setResult(true);

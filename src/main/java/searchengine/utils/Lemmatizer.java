@@ -18,7 +18,7 @@ public class Lemmatizer {
     private RussianLuceneMorphology russianMorph;
     private EnglishLuceneMorphology englishMorph;
 
-    public Map<String, Integer> buildLemmaRankMap(String text) {
+    public Map<String, Double> buildLemmaRankMap(String text) {
         List<String> lemmas = new ArrayList<>();
 
         String[] words = text.split("[^A-Za-z'А-Яа-яЁё]+");
@@ -43,10 +43,10 @@ public class Lemmatizer {
             }
         }
 
-        Map <String, Integer> lemmaRankMap = new HashMap<>();
+        Map <String, Double> lemmaRankMap = new HashMap<>();
 
         for (String lemma : lemmas) {
-            int rank = 1;
+            double rank = 1;
             if (lemmaRankMap.containsKey(lemma))
                 rank += lemmaRankMap.get(lemma);
 

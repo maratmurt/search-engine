@@ -38,7 +38,7 @@ public class IndexProcessor extends Thread {
         for (PageDto page : fetchedPages) {
             int siteId = page.getSiteId();
             String text = parser.getText(page.getContent());
-            Map<String, Integer> lemmaRankMap = lemmatizer.buildLemmaRankMap(text);
+            Map<String, Double> lemmaRankMap = lemmatizer.buildLemmaRankMap(text);
             List<String> lemmas = lemmaRankMap.keySet().stream().toList();
 
             // update existing lemmas
