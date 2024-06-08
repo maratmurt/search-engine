@@ -32,6 +32,7 @@ public class Lemmatizer {
                 if (isRussianStopword(word)) continue;
 
                 List<String> normalForms = russianMorph.getNormalForms(word);
+                normalForms = normalForms.stream().map(eWord -> eWord.replace("ё", "е")).toList();
                 lemmas.addAll(normalForms);
             }
 
