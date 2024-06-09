@@ -7,7 +7,8 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Service;
-import searchengine.model.Page;
+import searchengine.dto.indexing.PageDto;
+import searchengine.model.PageRowMapper;
 import searchengine.model.Site;
 import searchengine.model.Status;
 import searchengine.repositories.SitesRepository;
@@ -29,11 +30,11 @@ public class PageDao {
     private int pagesOffset = 0;
 
     private final JdbcTemplate jdbcTemplate;
-    private final List<Page> pages = new ArrayList<>();
+    private final List<PageDto> pages = new ArrayList<>();
     private final SitesRepository sitesRepository;
     private final ApplicationContext context;
 
-    public synchronized void batch(Page page) {
+    public synchronized void batch(PageDto page) {
         pages.add(page);
 
         if (pages.size() >= batchSize) {
@@ -53,12 +54,12 @@ public class PageDao {
         jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
-                Page item = pages.get(i);
+                PageDto item = pages.get(i);
 
                 ps.setInt(1, item.getCode());
                 ps.setString(2, item.getContent());
                 ps.setString(3, item.getPath());
-                ps.setInt(4, item.getSite().getId());
+                ps.setInt(4, item.getSiteId());
             }
 
             @Override
@@ -67,13 +68,20 @@ public class PageDao {
             }
         });
 
+        List<PageDto> fetchedPages = fetch(pagesCount, pagesOffset);
+
         IndexProcessor indexProcessor = context.getBean(IndexProcessor.class);
-        indexProcessor.setPagesCount(pagesCount);
-        indexProcessor.setPagesOffset(pagesOffset);
+        indexProcessor.setPages(fetchedPages);
         indexProcessor.start();
 
         pagesOffset += pagesCount;
 
         pages.clear();
+    }
+
+    public List<PageDto> fetch(int limit, int offset) {
+        String sql = "SELECT * FROM page LIMIT " + limit + " OFFSET " + offset;
+
+        return jdbcTemplate.query(sql, new PageRowMapper());
     }
 }

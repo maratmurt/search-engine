@@ -4,14 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.context.annotation.Scope;
-import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Component;
 import searchengine.dao.IndexDao;
 import searchengine.dao.LemmaDao;
 import searchengine.dto.indexing.IndexDto;
 import searchengine.dto.indexing.LemmaDto;
 import searchengine.dto.indexing.PageDto;
-import searchengine.model.PageRowMapper;
 
 import java.util.List;
 import java.util.Map;
@@ -22,10 +20,8 @@ import java.util.Map;
 @Scope("prototype")
 @RequiredArgsConstructor
 public class IndexProcessor extends Thread {
-    private int pagesCount;
-    private int pagesOffset;
+    private List<PageDto> pages;
 
-    private final JdbcTemplate jdbcTemplate;
     private final Lemmatizer lemmatizer;
     private final HtmlParser parser;
     private final LemmaDao lemmaDao;
@@ -33,10 +29,7 @@ public class IndexProcessor extends Thread {
 
     @Override
     public void run() {
-        String fetchSql = "SELECT * FROM page LIMIT " + pagesCount + " OFFSET " + pagesOffset;
-        List<PageDto> fetchedPages = jdbcTemplate.query(fetchSql, new PageRowMapper());
-
-        for (PageDto page : fetchedPages) {
+        for (PageDto page : pages) {
             int siteId = page.getSiteId();
             String text = parser.getText(page.getContent());
             Map<String, Double> lemmaRankMap = lemmatizer.buildLemmaRankMap(text);

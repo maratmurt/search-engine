@@ -8,11 +8,11 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import searchengine.model.Page;
+import searchengine.dao.PageDao;
+import searchengine.dto.indexing.PageDto;
 import searchengine.model.Site;
 import searchengine.model.Status;
 import searchengine.repositories.SitesRepository;
-import searchengine.dao.PageDao;
 
 import java.time.LocalDateTime;
 import java.util.ArrayList;
@@ -116,9 +116,9 @@ public class SiteCrawler extends RecursiveAction {
     }
 
     private void storePage(ResponseEntity<String> response) {
-        Page page = new Page();
+        PageDto page = new PageDto();
 
-        page.setSite(site);
+        page.setSiteId(site.getId());
         page.setPath(sourcePath);
         page.setCode(response.getStatusCodeValue());
         page.setContent(response.getBody());
