@@ -16,20 +16,20 @@ import java.util.List;
 @Repository
 @RequiredArgsConstructor
 public class LemmaDao {
-    private final JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate connection;
     private final LemmaRowMapper rowMapper = new LemmaRowMapper();
 
     public List<LemmaDto> findAllByLemmaAndSiteId(List<String> lemmas, int siteId) {
         String sql = "SELECT * FROM lemma WHERE lemma.lemma IN ('" +
                 String.join("', '", lemmas) + "') AND site_id=" + siteId;
 
-        return jdbcTemplate.query(sql, rowMapper);
+        return connection.query(sql, rowMapper);
     }
 
     public void updateAll(List<LemmaDto> lemmas) {
         String updateSql = "UPDATE lemma SET lemma.frequency=? WHERE lemma.lemma=?";
 
-        jdbcTemplate.batchUpdate(updateSql, new BatchPreparedStatementSetter() {
+        connection.batchUpdate(updateSql, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
                 LemmaDto lemma = lemmas.get(i);
@@ -48,7 +48,7 @@ public class LemmaDao {
     public void saveAll(List<LemmaDto> lemmas) {
         String sql = "INSERT INTO lemma(lemma, site_id, frequency) VALUES(?, ?, ?)";
 
-        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+        connection.batchUpdate(sql, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
                 LemmaDto lemma = lemmas.get(i);

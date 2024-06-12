@@ -15,12 +15,12 @@ import java.util.List;
 @Repository
 @RequiredArgsConstructor
 public class IndexDao {
-    private final JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate connection;
 
     public void saveAll(List<IndexDto> indexes) {
         String sql = "INSERT INTO search_engine.index(lemma_id, page_id, search_engine.index.rank) VALUES(?, ?, ?)";
 
-        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+        connection.batchUpdate(sql, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
                 IndexDto index = indexes.get(i);

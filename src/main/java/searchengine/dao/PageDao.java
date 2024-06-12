@@ -32,7 +32,7 @@ public class PageDao {
 
     private int pagesOffset = 0;
 
-    private final JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate connection;
     private final List<PageDto> pages = new ArrayList<>();
     private final SiteDao siteDao;
     private final ApplicationContext context;
@@ -55,7 +55,7 @@ public class PageDao {
 
         String sql = "INSERT INTO page(code, content, path, site_id) VALUES(?, ?, ?, ?)";
 
-        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+        connection.batchUpdate(sql, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
                 PageDto item = pages.get(i);
@@ -86,22 +86,22 @@ public class PageDao {
     public List<PageDto> fetch(int limit, int offset) {
         String sql = "SELECT * FROM page LIMIT " + limit + " OFFSET " + offset;
 
-        return jdbcTemplate.query(sql, rowMapper);
+        return connection.query(sql, rowMapper);
     }
 
     public Optional<PageDto> findBySiteIdAndPath(int siteId, String path) {
         String sql = "SELECT * FROM page WHERE site_id=" + siteId + " AND path='" + path + "'";
 
-        return jdbcTemplate.query(sql, rowMapper).stream().findAny();
+        return connection.query(sql, rowMapper).stream().findAny();
     }
 
     public void delete(PageDto pageDto) {
-        jdbcTemplate.update("DELETE FROM page WHERE id=" + pageDto.getId());
+        connection.update("DELETE FROM page WHERE id=" + pageDto.getId());
     }
 
     public PageDto save(PageDto page) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(
+        connection.update(
                 new PreparedStatementCreator() {
                     @Override
                     public PreparedStatement createPreparedStatement(Connection con) throws SQLException {

@@ -22,12 +22,12 @@ import java.util.Optional;
 @Repository
 @RequiredArgsConstructor
 public class SiteDao {
-    private final JdbcTemplate jdbcTemplate;
+    private final JdbcTemplate connection;
     private final SiteRowMapper rowMapper = new SiteRowMapper();
 
     public SiteDto save(SiteDto site) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
-        jdbcTemplate.update(
+        connection.update(
                 con -> {
                     PreparedStatement ps = con.prepareStatement(
                             "INSERT INTO site (name, url, last_error, status, status_time) VALUES (?, ?, ?, ?, ?)",
@@ -52,23 +52,23 @@ public class SiteDao {
     public Optional<SiteDto> findByUrl(String url) {
         String sql = "SELECT * FROM site WHERE url='" + url + "'";
 
-        return jdbcTemplate.query(sql, rowMapper).stream().findAny();
+        return connection.query(sql, rowMapper).stream().findAny();
     }
 
     public void delete(SiteDto site) {
-        jdbcTemplate.update("DELETE FROM site WHERE id=" + site.getId());
+        connection.update("DELETE FROM site WHERE id=" + site.getId());
     }
 
     public List<SiteDto> findAllByStatus(Status status) {
         String sql = "SELECT * FROM site WHERE site.status='" + status.toString() + "'";
 
-        return jdbcTemplate.query(sql, rowMapper);
+        return connection.query(sql, rowMapper);
     }
 
     public void saveAll(List<SiteDto> sites) {
         String sql = "INSERT INTO site (name, url, last_error, status, status_time) VALUES (?, ?, ?, ?, ?)";
 
-        jdbcTemplate.batchUpdate(sql, new BatchPreparedStatementSetter() {
+        connection.batchUpdate(sql, new BatchPreparedStatementSetter() {
             @Override
             public void setValues(PreparedStatement ps, int i) throws SQLException {
                 SiteDto item = sites.get(i);
