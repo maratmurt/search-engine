@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Repository;
 import searchengine.dto.indexing.LemmaDto;
 import searchengine.model.LemmaRowMapper;
 
@@ -13,16 +13,17 @@ import java.sql.SQLException;
 import java.util.List;
 
 @Slf4j
-@Service
+@Repository
 @RequiredArgsConstructor
 public class LemmaDao {
     private final JdbcTemplate jdbcTemplate;
+    private final LemmaRowMapper rowMapper = new LemmaRowMapper();
 
     public List<LemmaDto> findAllByLemmaAndSiteId(List<String> lemmas, int siteId) {
         String sql = "SELECT * FROM lemma WHERE lemma.lemma IN ('" +
                 String.join("', '", lemmas) + "') AND site_id=" + siteId;
 
-        return jdbcTemplate.query(sql, new LemmaRowMapper());
+        return jdbcTemplate.query(sql, rowMapper);
     }
 
     public void updateAll(List<LemmaDto> lemmas) {

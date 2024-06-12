@@ -4,7 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
+import org.springframework.stereotype.Repository;
 import searchengine.dto.indexing.IndexDto;
 
 import java.sql.PreparedStatement;
@@ -12,7 +12,7 @@ import java.sql.SQLException;
 import java.util.List;
 
 @Slf4j
-@Service
+@Repository
 @RequiredArgsConstructor
 public class IndexDao {
     private final JdbcTemplate jdbcTemplate;

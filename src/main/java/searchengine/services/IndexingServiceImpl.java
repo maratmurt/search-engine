@@ -7,14 +7,14 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import searchengine.config.SiteConfig;
 import searchengine.config.SitesList;
+import searchengine.dao.PageDao;
+import searchengine.dao.SiteDao;
 import searchengine.dto.ApiResponse;
 import searchengine.dto.ErrorResponse;
 import searchengine.dto.indexing.IndexingResponse;
-import searchengine.model.Page;
-import searchengine.model.Site;
+import searchengine.dto.indexing.PageDto;
+import searchengine.dto.indexing.SiteDto;
 import searchengine.model.Status;
-import searchengine.repositories.PagesRepository;
-import searchengine.repositories.SitesRepository;
 import searchengine.utils.HtmlParser;
 import searchengine.utils.IndexingTasksManager;
 import searchengine.utils.Lemmatizer;
@@ -22,6 +22,7 @@ import searchengine.utils.SiteCrawler;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.HashSet;
 import java.util.Map;
@@ -36,11 +37,11 @@ import java.util.regex.Pattern;
 public class IndexingServiceImpl implements IndexingService{
 
     private final SitesList sitesList;
-    private final SitesRepository sitesRepository;
+    private final SiteDao siteDao;
     private final ApplicationContext context;
     private final IndexingTasksManager tasksManager;
     private final HtmlParser parser;
-    private final PagesRepository pagesRepository;
+    private final PageDao pageDao;
     private final Lemmatizer lemmatizer;
 
     @Override
@@ -51,16 +52,15 @@ public class IndexingServiceImpl implements IndexingService{
         tasksManager.initialize();
 
         for (SiteConfig siteConfig : sitesList.getSites()) {
-            sitesRepository.findByUrl(siteConfig.getUrl()).ifPresent(sitesRepository::delete);
+            siteDao.findByUrl(siteConfig.getUrl()).ifPresent(siteDao::delete);
 
-            Site site = new Site();
+            SiteDto site = new SiteDto();
 
             site.setName(siteConfig.getName());
             site.setUrl(siteConfig.getUrl());
-            site.setStatus(Status.INDEXING);
-            site.setStatusTime(LocalDateTime.now());
-
-            site = sitesRepository.save(site);
+            site.setStatus(Status.INDEXING.toString());
+            site.setStatusTime(Timestamp.valueOf(LocalDateTime.now()));
+            site = siteDao.save(site);
 
             SiteCrawler crawler = context.getBean(SiteCrawler.class);
             String path = "/";
@@ -113,20 +113,21 @@ public class IndexingServiceImpl implements IndexingService{
             return new ErrorResponse("Данная страница находится за пределами сайтов, указанных в конфигурационном файле");
         }
 
-        Site site;
-        Optional<Site> existingSite = sitesRepository.findByUrl(rootUrl);
+        SiteDto site;
+        Optional<SiteDto> existingSite = siteDao.findByUrl(rootUrl);
         if (existingSite.isPresent()) {
             site = existingSite.get();
         } else {
-            site = new Site();
+            site = new SiteDto();
             site.setUrl(matchSiteConfig.getUrl());
             site.setName(matchSiteConfig.getName());
-            site.setStatusTime(LocalDateTime.now());
-            site = sitesRepository.save(site);
+            site.setStatusTime(Timestamp.valueOf(LocalDateTime.now()));
+            site = siteDao.save(site);
         }
 
+        int siteId = site.getId();
         String path = url.substring(rootUrl.length());
-        pagesRepository.findBySiteAndPath(site, path).ifPresent(pagesRepository::delete);
+        pageDao.findBySiteIdAndPath(siteId, path).ifPresent(pageDao::delete);
 
         ResponseEntity<String> pageResponse;
         try {
@@ -134,12 +135,12 @@ public class IndexingServiceImpl implements IndexingService{
         } catch (Exception e) {
             return new ErrorResponse(e.getLocalizedMessage());
         }
-        Page page = new Page();
-        page.setSite(site);
+        PageDto page = new PageDto();
+        page.setSiteId(siteId);
         page.setPath(path);
         page.setCode(pageResponse.getStatusCodeValue());
         page.setContent(pageResponse.getBody());
-        page = pagesRepository.save(page);
+        page = pageDao.save(page);
 
         String text = parser.getText(page.getContent());
         Map<String, Double> lemmaRankMap = lemmatizer.buildLemmaRankMap(text);

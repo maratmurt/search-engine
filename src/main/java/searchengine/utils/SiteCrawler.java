@@ -9,11 +9,12 @@ import org.springframework.context.annotation.Scope;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
 import searchengine.dao.PageDao;
+import searchengine.dao.SiteDao;
 import searchengine.dto.indexing.PageDto;
-import searchengine.model.Site;
+import searchengine.dto.indexing.SiteDto;
 import searchengine.model.Status;
-import searchengine.repositories.SitesRepository;
 
+import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
@@ -29,12 +30,12 @@ import java.util.concurrent.RecursiveAction;
 @RequiredArgsConstructor
 public class SiteCrawler extends RecursiveAction {
 
-    private Site site;
+    private SiteDto site;
     private String sourcePath;
     private Set<String> visited;
     private final HtmlParser parser;
     private final ApplicationContext context;
-    private final SitesRepository sitesRepository;
+    private final SiteDao siteDao;
     private final PageDao pageDao;
     private final IndexingTasksManager tasksManager;
 
@@ -47,10 +48,10 @@ public class SiteCrawler extends RecursiveAction {
         } catch (Exception e) {
             log.error(e.getMessage());
             if (sourcePath.equals("/")) {
-                site.setStatus(Status.FAILED);
+                site.setStatus(Status.FAILED.toString());
                 site.setLastError("Главная страница не доступна");
-                site.setStatusTime(LocalDateTime.now());
-                site = sitesRepository.save(site);
+                site.setStatusTime(Timestamp.valueOf(LocalDateTime.now()));
+                site = siteDao.save(site);
             }
             return;
         }
@@ -87,15 +88,15 @@ public class SiteCrawler extends RecursiveAction {
 
     private void setFinalStatus() {
         if (tasksManager.isRunning()) {
-            site.setStatus(Status.INDEXED);
+            site.setStatus(Status.INDEXED.toString());
             log.info(site.getName() + " INDEXED");
         } else {
-            site.setStatus(Status.FAILED);
+            site.setStatus(Status.FAILED.toString());
             site.setLastError("Индексация остановлена пользователем");
             log.info(site.getName() + " FAILED");
         }
-        site.setStatusTime(LocalDateTime.now());
-        sitesRepository.save(site);
+        site.setStatusTime(Timestamp.valueOf(LocalDateTime.now()));
+        siteDao.save(site);
     }
 
     private List<String> extractNewPaths(String body) {

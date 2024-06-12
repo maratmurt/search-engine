@@ -6,22 +6,25 @@ import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.stereotype.Service;
+import org.springframework.jdbc.core.PreparedStatementCreator;
+import org.springframework.jdbc.support.GeneratedKeyHolder;
+import org.springframework.jdbc.support.KeyHolder;
+import org.springframework.stereotype.Repository;
 import searchengine.dto.indexing.PageDto;
+import searchengine.dto.indexing.SiteDto;
 import searchengine.model.PageRowMapper;
-import searchengine.model.Site;
 import searchengine.model.Status;
-import searchengine.repositories.SitesRepository;
 import searchengine.utils.IndexProcessor;
 
-import java.sql.PreparedStatement;
-import java.sql.SQLException;
+import java.sql.*;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Objects;
+import java.util.Optional;
 
 @Slf4j
-@Service
+@Repository
 @RequiredArgsConstructor
 public class PageDao {
     @Value("${indexing-settings.batch_size}")
@@ -31,8 +34,9 @@ public class PageDao {
 
     private final JdbcTemplate jdbcTemplate;
     private final List<PageDto> pages = new ArrayList<>();
-    private final SitesRepository sitesRepository;
+    private final SiteDao siteDao;
     private final ApplicationContext context;
+    private final PageRowMapper rowMapper = new PageRowMapper();
 
     public synchronized void batch(PageDto page) {
         pages.add(page);
@@ -40,9 +44,9 @@ public class PageDao {
         if (pages.size() >= batchSize) {
             flush();
 
-            List<Site> sites = sitesRepository.findAllByStatus(Status.INDEXING);
-            sites.forEach(site -> site.setStatusTime(LocalDateTime.now()));
-            sitesRepository.saveAll(sites);
+            List<SiteDto> sites = siteDao.findAllByStatus(Status.INDEXING);
+            sites.forEach(site -> site.setStatusTime(Timestamp.valueOf(LocalDateTime.now())));
+            siteDao.saveAll(sites);
         }
     }
 
@@ -82,6 +86,42 @@ public class PageDao {
     public List<PageDto> fetch(int limit, int offset) {
         String sql = "SELECT * FROM page LIMIT " + limit + " OFFSET " + offset;
 
-        return jdbcTemplate.query(sql, new PageRowMapper());
+        return jdbcTemplate.query(sql, rowMapper);
+    }
+
+    public Optional<PageDto> findBySiteIdAndPath(int siteId, String path) {
+        String sql = "SELECT * FROM page WHERE site_id=" + siteId + " AND path='" + path + "'";
+
+        return jdbcTemplate.query(sql, rowMapper).stream().findAny();
+    }
+
+    public void delete(PageDto pageDto) {
+        jdbcTemplate.update("DELETE FROM page WHERE id=" + pageDto.getId());
+    }
+
+    public PageDto save(PageDto page) {
+        KeyHolder keyHolder = new GeneratedKeyHolder();
+        jdbcTemplate.update(
+                new PreparedStatementCreator() {
+                    @Override
+                    public PreparedStatement createPreparedStatement(Connection con) throws SQLException {
+                        PreparedStatement ps = con.prepareStatement(
+                                "INSERT INTO page (code, content, path, site_id) VALUES (?, ?, ?, ?)",
+                                Statement.RETURN_GENERATED_KEYS);
+
+                        ps.setInt(1, page.getCode());
+                        ps.setString(2, page.getContent());
+                        ps.setString(3, page.getPath());
+                        ps.setInt(4, page.getSiteId());
+
+                        return ps;
+                    }
+                },
+                keyHolder
+        );
+
+        page.setId(Objects.requireNonNull(keyHolder.getKey()).intValue());
+
+        return page;
     }
 }
