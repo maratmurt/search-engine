@@ -8,7 +8,6 @@ import org.springframework.context.ApplicationContext;
 import org.springframework.context.annotation.Scope;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
-import searchengine.dao.PageDao;
 import searchengine.dao.SiteDao;
 import searchengine.dto.indexing.PageDto;
 import searchengine.dto.indexing.SiteDto;
@@ -36,8 +35,8 @@ public class SiteCrawler extends RecursiveAction {
     private final HtmlParser parser;
     private final ApplicationContext context;
     private final SiteDao siteDao;
-    private final PageDao pageDao;
     private final IndexingTasksManager tasksManager;
+    private final BatchProcessor batch;
 
     @Override
     protected void compute() {
@@ -81,7 +80,7 @@ public class SiteCrawler extends RecursiveAction {
         }
 
         if (sourcePath.equals("/")) {
-            pageDao.flush();
+            batch.flush();
             setFinalStatus();
         }
     }
@@ -124,7 +123,7 @@ public class SiteCrawler extends RecursiveAction {
         page.setCode(response.getStatusCodeValue());
         page.setContent(response.getBody());
 
-        pageDao.batch(page);
+        batch.add(page);
     }
 
     private String convertToPath(String link) {
