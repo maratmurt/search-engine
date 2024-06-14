@@ -24,7 +24,7 @@ public class Lemmatizer {
         String[] words = text.split("[^A-Za-z'А-Яа-яЁё]+");
 
         for (String word : words) {
-            if (word.contains("'")) continue;
+            if (word.length() == 1 || word.contains("'")) continue;
 
             word = word.toLowerCase();
 
