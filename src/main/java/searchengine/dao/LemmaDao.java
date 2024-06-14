@@ -22,7 +22,6 @@ public class LemmaDao {
     public List<LemmaDto> findAllByLemmaAndSiteId(List<String> lemmas, int siteId) {
         String sql = "SELECT * FROM lemma WHERE lemma.lemma IN ('" +
                 String.join("', '", lemmas) + "') AND site_id=" + siteId;
-
         return connection.query(sql, rowMapper);
     }
 

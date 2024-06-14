@@ -27,6 +27,7 @@ public class SiteDao {
 
     public SiteDto save(SiteDto site) {
         KeyHolder keyHolder = new GeneratedKeyHolder();
+
         connection.update(
                 con -> {
                     PreparedStatement ps = con.prepareStatement(
@@ -51,7 +52,6 @@ public class SiteDao {
 
     public Optional<SiteDto> findByUrl(String url) {
         String sql = "SELECT * FROM site WHERE url='" + url + "'";
-
         return connection.query(sql, rowMapper).stream().findAny();
     }
 
@@ -61,7 +61,6 @@ public class SiteDao {
 
     public List<SiteDto> findAllByStatus(Status status) {
         String sql = "SELECT * FROM site WHERE site.status='" + status.toString() + "'";
-
         return connection.query(sql, rowMapper);
     }
 

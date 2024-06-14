@@ -4,14 +4,12 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
-import org.springframework.jdbc.core.PreparedStatementCreator;
 import org.springframework.jdbc.support.GeneratedKeyHolder;
 import org.springframework.jdbc.support.KeyHolder;
 import org.springframework.stereotype.Repository;
 import searchengine.dto.indexing.PageDto;
 import searchengine.model.PageRowMapper;
 
-import java.sql.Connection;
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.sql.Statement;
@@ -28,18 +26,16 @@ public class PageDao {
 
     public List<PageDto> fetch(int limit, int offset) {
         String sql = "SELECT * FROM page LIMIT " + limit + " OFFSET " + offset;
-
         return connection.query(sql, rowMapper);
     }
 
     public Optional<PageDto> findBySiteIdAndPath(int siteId, String path) {
         String sql = "SELECT * FROM page WHERE site_id=" + siteId + " AND path='" + path + "'";
-
         return connection.query(sql, rowMapper).stream().findAny();
     }
 
-    public void delete(PageDto pageDto) {
-        connection.update("DELETE FROM page WHERE id=" + pageDto.getId());
+    public void delete(PageDto page) {
+        connection.update("DELETE FROM page WHERE id=" + page.getId());
     }
 
     public PageDto save(PageDto page) {

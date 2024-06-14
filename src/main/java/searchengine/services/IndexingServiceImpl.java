@@ -25,7 +25,6 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -42,7 +41,6 @@ public class IndexingServiceImpl implements IndexingService{
     private final IndexingTasksManager tasksManager;
     private final HtmlParser parser;
     private final PageDao pageDao;
-    private final Lemmatizer lemmatizer;
 
     @Override
     public ApiResponse startIndexing() {
@@ -140,10 +138,7 @@ public class IndexingServiceImpl implements IndexingService{
         page.setPath(path);
         page.setCode(pageResponse.getStatusCodeValue());
         page.setContent(pageResponse.getBody());
-        page = pageDao.save(page);
-
-        String text = parser.getText(page.getContent());
-        Map<String, Double> lemmaRankMap = lemmatizer.buildLemmaRankMap(text);
+        pageDao.save(page);
 
         IndexingResponse response = new IndexingResponse();
         response.setResult(true);
