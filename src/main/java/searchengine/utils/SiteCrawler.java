@@ -36,7 +36,7 @@ public class SiteCrawler extends RecursiveAction {
     private final ApplicationContext context;
     private final SiteDao siteDao;
     private final IndexingTasksManager tasksManager;
-    private final BatchProcessor batch;
+    private final BatchExecutor batchExecutor;
 
     @Override
     protected void compute() {
@@ -80,7 +80,7 @@ public class SiteCrawler extends RecursiveAction {
         }
 
         if (sourcePath.equals("/")) {
-            batch.flush();
+            batchExecutor.flush();
             setFinalStatus();
         }
     }
@@ -123,7 +123,7 @@ public class SiteCrawler extends RecursiveAction {
         page.setCode(response.getStatusCodeValue());
         page.setContent(response.getBody());
 
-        batch.add(page);
+        batchExecutor.add(page);
     }
 
     private String convertToPath(String link) {
