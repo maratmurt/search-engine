@@ -37,8 +37,10 @@ public class BatchProcessor {
             flush();
 
             List<SiteDto> sites = siteDao.findAllByStatus(Status.INDEXING);
-            sites.forEach(site -> site.setStatusTime(Timestamp.valueOf(LocalDateTime.now())));
-            siteDao.saveAll(sites);
+            sites.forEach(site -> {
+                site.setStatusTime(Timestamp.valueOf(LocalDateTime.now()));
+                siteDao.save(site);
+            });
         }
     }
 
