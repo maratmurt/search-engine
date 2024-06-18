@@ -85,4 +85,12 @@ public class PageDao {
             }
         });
     }
+
+    public int getAllPagesCount() {
+        return connection.queryForObject("SELECT COUNT(*) FROM page", Integer.class);
+    }
+
+    public int getSitePagesCount(int siteId) {
+        return connection.queryForObject("SELECT COUNT(*) FROM page WHERE site_id=" + siteId, Integer.class);
+    }
 }

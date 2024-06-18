@@ -64,4 +64,12 @@ public class LemmaDao {
             }
         });
     }
+
+    public int getAllLemmasCount() {
+        return connection.queryForObject("SELECT COUNT(*) FROM lemma", Integer.class);
+    }
+
+    public int getSiteLemmasCount(int siteId) {
+        return connection.queryForObject("SELECT COUNT(*) FROM lemma WHERE site_id=" + siteId, Integer.class);
+    }
 }
