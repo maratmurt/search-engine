@@ -26,14 +26,12 @@ public class IndexingTasksManager implements Runnable {
 
     @Override
     public void run() {
-        running = true;
-
         long start = System.currentTimeMillis();
 
         while (!tasks.isEmpty() && running) {
             for (int i = 0; i < tasks.size(); i++) {
                 ForkJoinTask<Void> task = tasks.get(i);
-                if (task.isDone()) {
+                if (task != null && task.isDone()) {
                     tasks.remove(task);
                     log.info("Removed completed task. Tasks count = " + tasks.size());
                 }
@@ -69,6 +67,7 @@ public class IndexingTasksManager implements Runnable {
     }
 
     public void initialize() {
+        running = true;
         int parallelism = Runtime.getRuntime().availableProcessors() * threadMultiplier;
         log.info("ForkJoinPool parallelism = " + parallelism);
         pool = new ForkJoinPool(parallelism);

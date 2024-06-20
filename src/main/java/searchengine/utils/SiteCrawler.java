@@ -40,6 +40,8 @@ public class SiteCrawler extends RecursiveAction {
 
     @Override
     protected void compute() {
+        if (!tasksManager.isRunning()) return;
+
         String url = site.getUrl() + sourcePath;
         ResponseEntity<String> response;
         try {
