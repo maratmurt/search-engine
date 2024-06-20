@@ -72,4 +72,11 @@ public class LemmaDao {
     public int getSiteLemmasCount(int siteId) {
         return connection.queryForObject("SELECT COUNT(*) FROM lemma WHERE site_id=" + siteId, Integer.class);
     }
+
+    public List<LemmaDto> findAllByLemma(List<String> lemmas) {
+        String sql = "SELECT * FROM lemma WHERE lemma.lemma IN ('" +
+            String.join("', '", lemmas) + "')";
+
+        return connection.query(sql, rowMapper);
+    }
 }

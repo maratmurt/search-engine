@@ -4,6 +4,7 @@ import lombok.RequiredArgsConstructor;
 import lombok.extern.slf4j.Slf4j;
 import org.jsoup.Connection;
 import org.jsoup.Jsoup;
+import org.jsoup.nodes.Element;
 import org.jsoup.select.Elements;
 import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Component;
@@ -40,5 +41,14 @@ public class HtmlParser {
 
     public String getText(String body) {
         return Jsoup.parse(body).text();
+    }
+
+    public String getTitle(String body) {
+        Element header = Jsoup.parse(body).selectFirst("title");
+        if (header == null) {
+            return "Без заголовка";
+        } else {
+            return header.text();
+        }
     }
 }

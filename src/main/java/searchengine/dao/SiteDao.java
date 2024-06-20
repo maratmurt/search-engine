@@ -15,6 +15,7 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Repository
@@ -76,6 +77,12 @@ public class SiteDao {
     public List<SiteDto> findAllByStatus(Status status) {
         String sql = "SELECT * FROM site WHERE site.status='" + status.toString() + "'";
 
+        return connection.query(sql, rowMapper);
+    }
+
+    public List<SiteDto> findAllById(List<Integer> siteIds) {
+        String idsString = siteIds.stream().map(String::valueOf).collect(Collectors.joining(", "));
+        String sql = "SELECT * FROM site WHERE id IN(" + idsString + ")";
         return connection.query(sql, rowMapper);
     }
 }

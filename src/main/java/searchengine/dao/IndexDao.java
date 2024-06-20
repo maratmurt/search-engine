@@ -6,16 +6,19 @@ import org.springframework.jdbc.core.BatchPreparedStatementSetter;
 import org.springframework.jdbc.core.JdbcTemplate;
 import org.springframework.stereotype.Repository;
 import searchengine.dto.indexing.IndexDto;
+import searchengine.model.IndexRowMapper;
 
 import java.sql.PreparedStatement;
 import java.sql.SQLException;
 import java.util.List;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Repository
 @RequiredArgsConstructor
 public class IndexDao {
     private final JdbcTemplate connection;
+    private final IndexRowMapper rowMapper = new IndexRowMapper();
 
     public void saveAll(List<IndexDto> indexes) {
         String sql = "INSERT INTO search_engine.index(lemma_id, page_id, search_engine.index.rank) VALUES(?, ?, ?)";
@@ -35,5 +38,10 @@ public class IndexDao {
                 return indexes.size();
             }
         });
+    }
+
+    public List<IndexDto> findAllByLemmaIds(List<Integer> lemmaIds) {
+        String idsString = lemmaIds.stream().map(String::valueOf).collect(Collectors.joining(", "));
+        return connection.query("SELECT * FROM search_engine.index WHERE lemma_id IN (" + idsString + ")", rowMapper);
     }
 }

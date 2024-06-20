@@ -18,6 +18,7 @@ import java.sql.Statement;
 import java.util.List;
 import java.util.Objects;
 import java.util.Optional;
+import java.util.stream.Collectors;
 
 @Slf4j
 @Repository
@@ -92,5 +93,11 @@ public class PageDao {
 
     public int getSitePagesCount(int siteId) {
         return connection.queryForObject("SELECT COUNT(*) FROM page WHERE site_id=" + siteId, Integer.class);
+    }
+
+    public List<PageDto> findAllById(List<Integer> pageIds) {
+        String idsString = pageIds.stream().map(String::valueOf).collect(Collectors.joining(", "));
+        String sql = "SELECT * FROM page WHERE id IN (" + idsString + ")";
+        return connection.query(sql, rowMapper);
     }
 }
