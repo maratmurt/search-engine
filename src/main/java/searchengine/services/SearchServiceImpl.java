@@ -75,7 +75,7 @@ public class SearchServiceImpl implements SearchService {
         double maxRelevance = pageAbsRelevanceMap.values().stream().max(Comparator.naturalOrder()).orElseThrow();
 
         //set data
-        List<SearchData> data = new ArrayList<>();
+        List<SearchData> allData = new ArrayList<>();
         relevantPages.forEach(page -> {
             SearchData item = new SearchData();
 
@@ -95,14 +95,19 @@ public class SearchServiceImpl implements SearchService {
             String snippet = generateSnippet(text, query);
             item.setSnippet(snippet);
 
-            data.add(item);
+            allData.add(item);
         });
-        data.sort(Comparator.comparing(SearchData::getRelevance).reversed());
+        allData.sort(Comparator.comparing(SearchData::getRelevance).reversed());
+        List<SearchData> responseData = new ArrayList<>();
+        int bound = Math.min(offset + limit, relevantPages.size());
+        for (int i = offset; i < bound; i++) {
+            responseData.add(allData.get(i));
+        }
 
         SearchResponse response = new SearchResponse();
         response.setResult(true);
         response.setCount(relevantPages.size());
-        response.setData(data);
+        response.setData(responseData);
 
         return response;
     }
@@ -111,7 +116,6 @@ public class SearchServiceImpl implements SearchService {
         StringBuilder snippet = new StringBuilder();
         List<String> matchingWords = findMatchingWords(text, query);
         String regex = "(?<=[^A-Za-z'А-Яа-яЁё])(" + String.join("|", matchingWords) + ")(?=[^A-Za-z'А-Яа-яЁё])";
-        log.info("regex: " + regex);
         Matcher match = Pattern.compile(regex, Pattern.CASE_INSENSITIVE).matcher(text);
         int range = 80 / matchingWords.size();
         String bOpen = "<b>", bClose = "</b>", dots = "...";
