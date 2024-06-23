@@ -31,7 +31,7 @@ public class SiteDao {
 
             connection.update(con -> {
                 PreparedStatement ps = con.prepareStatement(
-                        "UPDATE site SET (status, status_time, last_error) VALUES (?, ?, ?) WHERE id=?");
+                        "UPDATE site SET status=?, status_time=?, last_error=? WHERE id=?");
 
                 ps.setString(1, site.getStatus());
                 ps.setTimestamp(2, site.getStatusTime());
