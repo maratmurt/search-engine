@@ -17,6 +17,7 @@ import searchengine.utils.IndexingTasksManager;
 
 import java.util.ArrayList;
 import java.util.List;
+import java.util.Optional;
 
 @Service
 @RequiredArgsConstructor
@@ -40,18 +41,21 @@ public class StatisticsServiceImpl implements StatisticsService {
         List<SiteConfig> sitesList = sites.getSites();
         for(int i = 0; i < sitesList.size(); i++) {
             SiteConfig siteConfig = sitesList.get(i);
-            SiteDto site = siteDao.findByUrl(siteConfig.getUrl()).orElseThrow();
             DetailedStatisticsItem item = new DetailedStatisticsItem();
             item.setName(siteConfig.getName());
             item.setUrl(siteConfig.getUrl());
-            int siteId = site.getId();
-            int pages = pageDao.getSitePagesCount(siteId);
-            int lemmas = lemmaDao.getSiteLemmasCount(siteId);
-            item.setPages(pages);
-            item.setLemmas(lemmas);
-            item.setStatus(site.getStatus());
-            item.setError(site.getLastError());
-            item.setStatusTime(site.getStatusTime().getTime());
+            Optional<SiteDto> existingSite = siteDao.findByUrl(siteConfig.getUrl());
+            if (existingSite.isPresent()) {
+                SiteDto site = existingSite.get();
+                int siteId = site.getId();
+                int pages = pageDao.getSitePagesCount(siteId);
+                int lemmas = lemmaDao.getSiteLemmasCount(siteId);
+                item.setPages(pages);
+                item.setLemmas(lemmas);
+                item.setStatus(site.getStatus());
+                item.setError(site.getLastError());
+                item.setStatusTime(site.getStatusTime().getTime());
+            }
             detailed.add(item);
         }
 
