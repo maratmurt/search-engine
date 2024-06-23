@@ -97,7 +97,6 @@ public class Lemmatizer {
         List<String> legalWords = new ArrayList<>();
         for (String word : words) {
             if (word.length() < 2 || word.contains("'")) continue;
-            word = word.toLowerCase();
             legalWords.add(word);
         }
         return legalWords;
@@ -105,6 +104,8 @@ public class Lemmatizer {
 
     private List<String> filterAndGetNormalForms(String word) {
         List<String> normalForms = null;
+        word = word.toLowerCase();
+
         if (word.matches("[А-Яа-яЁё]+")) {
             if (isRussianStopword(word)) return null;
 

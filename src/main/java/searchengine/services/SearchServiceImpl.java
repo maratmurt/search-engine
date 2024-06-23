@@ -41,37 +41,53 @@ public class SearchServiceImpl implements SearchService {
 
         List<String> queryLemmas = lemmatizer.buildLemmaRankMap(query).keySet().stream().toList();
 
-        List<LemmaDto> existingLemmas = lemmaDao.findAllByLemma(queryLemmas);
-
-        List<PageDto> relevantPages = new ArrayList<>();
-        for (LemmaDto lemma : existingLemmas) {
-            List<Integer> lemmaIds = lemmaDao.findAllByLemma(List.of(lemma.getLemma()))
-                    .stream().map(LemmaDto::getId).toList();
-            List<Integer> pageIds = indexDao.findAllByLemmaIds(lemmaIds).stream()
-                    .map(IndexDto::getPageId).toList();
-            List<PageDto> nextPages = pageDao.findAllById(pageIds);
-
-            if (relevantPages.isEmpty()) {
-                relevantPages = nextPages;
-                continue;
-            }
-
-            for (Iterator<PageDto> iterator = relevantPages.iterator(); iterator.hasNext();) {
-                PageDto relevantPage = iterator.next();
-                if (!nextPages.contains(relevantPage)) iterator.remove();
-            }
+        Optional<String> noMatchLemma = queryLemmas.stream().filter(lemma -> lemmaDao.findAllByLemma(List.of(lemma)).isEmpty()).findAny();
+        if (noMatchLemma.isPresent()) {
+            log.info("not matching lemma present");
+            return blankResponse();
         }
 
+        List<LemmaDto> existingLemmas = lemmaDao.findAllByLemma(queryLemmas);
+
+        if (site != null) {
+            log.info(site);
+            int requestSiteId = siteDao.findByUrl(site).orElseThrow().getId();
+            existingLemmas.removeIf(lemma -> lemma.getSiteId() != requestSiteId);
+            if (existingLemmas.isEmpty()) return blankResponse();
+        }
+
+        List<Integer> existingLemmaIds = existingLemmas.stream().map(LemmaDto::getId).toList();
+        List<IndexDto> allIndexes = indexDao.findAllByLemmaIds(existingLemmaIds);
+        List<Integer> allPageIds = allIndexes.stream().map(IndexDto::getPageId).toList();
+        List<PageDto> allPages = pageDao.findAllById(allPageIds);
+
+        //filter irrelevant pages
+        List<PageDto> relevantPages = new ArrayList<>(allPages);
+        for (String lemma : queryLemmas) {
+            List<Integer> lemmaIds = lemmaDao.findAllByLemma(List.of(lemma)).stream().map(LemmaDto::getId).toList();
+            List<IndexDto> lemmaIndexes = allIndexes.stream().filter(index -> lemmaIds.contains(index.getLemmaId())).toList();
+            List<Integer> lemmaPageIds = lemmaIndexes.stream().map(IndexDto::getPageId).toList();
+            List<PageDto> lemmaPages = allPages.stream().filter(page -> lemmaPageIds.contains(page.getId())).toList();
+            relevantPages.removeIf(page -> !lemmaPages.contains(page));
+        }
+
+        if (relevantPages.isEmpty()) {
+            log.info("no relevant pages");
+            return blankResponse();
+        }
+
+        //map site ids to sites
         List<Integer> siteIds = relevantPages.stream().map(PageDto::getSiteId).distinct().toList();
         Map<Integer, SiteDto> siteIdToSite = siteDao.findAllById(siteIds).stream()
-                .collect(Collectors.toMap(s -> s.getId(), s -> s));
+                .collect(Collectors.toMap(SiteDto::getId, siteDto -> siteDto));
 
         //get absolute relevance
-        List<Integer> pageIds = relevantPages.stream().map(PageDto::getId).toList();
-        List<Integer> lemmaIds = existingLemmas.stream().map(LemmaDto::getId).toList();
-        List<IndexDto> indexes = indexDao.findAllByLemmaIds(lemmaIds).stream()
-                .filter(index -> pageIds.contains(index.getPageId())).toList();
-        Map<Integer, Double> pageAbsRelevanceMap = indexes.stream().collect(Collectors.toMap(IndexDto::getPageId, IndexDto::getRank, Double::sum));
+        List<Integer> relevantPageIds = relevantPages.stream().map(PageDto::getId).toList();
+        List<IndexDto> relevantIndexes = allIndexes.stream()
+                .filter(index -> relevantPageIds.contains(index.getPageId())).toList();
+        Map<Integer, Double> pageAbsRelevanceMap = relevantIndexes.stream()
+                .collect(Collectors.toMap(IndexDto::getPageId, IndexDto::getRank, Double::sum));
+
         double maxRelevance = pageAbsRelevanceMap.values().stream().max(Comparator.naturalOrder()).orElseThrow();
 
         //set data
@@ -98,11 +114,8 @@ public class SearchServiceImpl implements SearchService {
             allData.add(item);
         });
         allData.sort(Comparator.comparing(SearchData::getRelevance).reversed());
-        List<SearchData> responseData = new ArrayList<>();
         int bound = Math.min(offset + limit, relevantPages.size());
-        for (int i = offset; i < bound; i++) {
-            responseData.add(allData.get(i));
-        }
+        List<SearchData> responseData = allData.subList(offset, bound);
 
         SearchResponse response = new SearchResponse();
         response.setResult(true);
@@ -116,10 +129,11 @@ public class SearchServiceImpl implements SearchService {
         StringBuilder snippet = new StringBuilder();
         List<String> matchingWords = findMatchingWords(text, query);
         String regex = "(?<=[^A-Za-z'А-Яа-яЁё])(" + String.join("|", matchingWords) + ")(?=[^A-Za-z'А-Яа-яЁё])";
-        Matcher match = Pattern.compile(regex, Pattern.CASE_INSENSITIVE).matcher(text);
+        log.info(regex);
+        Matcher match = Pattern.compile(regex).matcher(text);
         int range = 80 / matchingWords.size();
         String bOpen = "<b>", bClose = "</b>", dots = "...";
-        match.find();
+        if (!match.find()) return "";
         int start = Math.max(0, match.start() - range);
         snippet.append(dots)
                 .append(text, start, match.start())
@@ -170,5 +184,13 @@ public class SearchServiceImpl implements SearchService {
             }
         });
         return new ArrayList<>(matchingWords);
+    }
+
+    private SearchResponse blankResponse() {
+        SearchResponse response = new SearchResponse();
+        response.setResult(true);
+        response.setCount(0);
+        response.setData(List.of());
+        return response;
     }
 }
