@@ -17,7 +17,6 @@ import searchengine.dto.indexing.SiteDto;
 import searchengine.model.Status;
 import searchengine.utils.HtmlParser;
 import searchengine.utils.IndexingTasksManager;
-import searchengine.utils.Lemmatizer;
 import searchengine.utils.SiteCrawler;
 
 import java.net.URLDecoder;
@@ -25,7 +24,6 @@ import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.HashSet;
-import java.util.Map;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -42,7 +40,6 @@ public class IndexingServiceImpl implements IndexingService{
     private final IndexingTasksManager tasksManager;
     private final HtmlParser parser;
     private final PageDao pageDao;
-    private final Lemmatizer lemmatizer;
 
     @Override
     public ApiResponse startIndexing() {
@@ -96,34 +93,16 @@ public class IndexingServiceImpl implements IndexingService{
 
         Matcher rootMatch = Pattern.compile("http(s?)://[\\w-.]+").matcher(url);
         String rootUrl;
-        if (rootMatch.find()) {
+        if (rootMatch.find())
             rootUrl = rootMatch.group();
-        } else {
+        else
             return new ErrorResponse("Введён некорректный адрес страницы");
-        }
 
-        SiteConfig matchSiteConfig = null;
-        for (SiteConfig siteConfig : sitesList.getSites()) {
-            if (url.contains(siteConfig.getUrl())) {
-                matchSiteConfig = siteConfig;
-                break;
-            }
-        }
-        if (matchSiteConfig == null) {
+        SiteConfig matchSiteConfig = findMatchingConfig(url);
+        if (matchSiteConfig == null)
             return new ErrorResponse("Данная страница находится за пределами сайтов, указанных в конфигурационном файле");
-        }
 
-        SiteDto site;
-        Optional<SiteDto> existingSite = siteDao.findByUrl(rootUrl);
-        if (existingSite.isPresent()) {
-            site = existingSite.get();
-        } else {
-            site = new SiteDto();
-            site.setUrl(matchSiteConfig.getUrl());
-            site.setName(matchSiteConfig.getName());
-            site.setStatusTime(Timestamp.valueOf(LocalDateTime.now()));
-            site = siteDao.save(site);
-        }
+        SiteDto site = findOrCreateSite(matchSiteConfig.getName(), matchSiteConfig.getUrl());
 
         int siteId = site.getId();
         String path = url.substring(rootUrl.length());
@@ -140,13 +119,36 @@ public class IndexingServiceImpl implements IndexingService{
         page.setPath(path);
         page.setCode(pageResponse.getStatusCodeValue());
         page.setContent(pageResponse.getBody());
-        page = pageDao.save(page);
-
-        String text = parser.getText(page.getContent());
-        Map<String, Double> lemmaRankMap = lemmatizer.buildLemmaRankMap(text);
+        pageDao.save(page);
 
         IndexingResponse response = new IndexingResponse();
         response.setResult(true);
         return response;
+    }
+
+    private SiteConfig findMatchingConfig(String url) {
+        SiteConfig matchSiteConfig = null;
+        for (SiteConfig siteConfig : sitesList.getSites()) {
+            if (url.contains(siteConfig.getUrl())) {
+                matchSiteConfig = siteConfig;
+                break;
+            }
+        }
+        return matchSiteConfig;
+    }
+
+    private SiteDto findOrCreateSite(String name, String url) {
+        SiteDto site;
+        Optional<SiteDto> existingSite = siteDao.findByUrl(url);
+        if (existingSite.isPresent()) {
+            site = existingSite.get();
+        } else {
+            site = new SiteDto();
+            site.setUrl(url);
+            site.setName(name);
+            site.setStatusTime(Timestamp.valueOf(LocalDateTime.now()));
+            site = siteDao.save(site);
+        }
+        return site;
     }
 }

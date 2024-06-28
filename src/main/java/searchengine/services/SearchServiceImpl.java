@@ -33,6 +33,11 @@ public class SearchServiceImpl implements SearchService {
     private final PageDao pageDao;
     private final SiteDao siteDao;
     private final HtmlParser parser;
+    private List<PageDto> relevantPages;
+    private List<LemmaDto> existingLemmas;
+    private List<IndexDto> allIndexes;
+    private Map<Integer, Double> pageAbsRelevanceMap;
+    private double maxRelevance;
 
     @Override
     public ApiResponse search(String query, String site, int offset, int limit) {
@@ -41,56 +46,72 @@ public class SearchServiceImpl implements SearchService {
 
         List<String> queryLemmas = lemmatizer.buildLemmaRankMap(query).keySet().stream().toList();
 
-        Optional<String> noMatchLemma = queryLemmas.stream().filter(lemma -> lemmaDao.findAllByLemma(List.of(lemma)).isEmpty()).findAny();
-        if (noMatchLemma.isPresent()) {
-            log.info("not matching lemma present");
+        Optional<String> noMatchLemma = queryLemmas.stream()
+                .filter(lemma -> lemmaDao.findAllByLemma(List.of(lemma)).isEmpty()).findAny();
+        if (noMatchLemma.isPresent())
             return blankResponse();
-        }
 
-        List<LemmaDto> existingLemmas = lemmaDao.findAllByLemma(queryLemmas);
+        existingLemmas = lemmaDao.findAllByLemma(queryLemmas);
 
         if (site != null) {
-            log.info(site);
             int requestSiteId = siteDao.findByUrl(site).orElseThrow().getId();
             existingLemmas.removeIf(lemma -> lemma.getSiteId() != requestSiteId);
             if (existingLemmas.isEmpty()) return blankResponse();
         }
 
+        filterIrrelevantPages();
+
+        if (relevantPages.isEmpty())
+            return blankResponse();
+
+        getAbsoluteAndMaxRelevance();
+
+        List<SearchData> allData = collectSearchData(query);
+        int bound = Math.min(offset + limit, relevantPages.size());
+        List<SearchData> responseData = allData.subList(offset, bound);
+
+        SearchResponse response = new SearchResponse();
+        response.setResult(true);
+        response.setCount(relevantPages.size());
+        response.setData(responseData);
+
+        return response;
+    }
+
+    private void filterIrrelevantPages() {
         List<Integer> existingLemmaIds = existingLemmas.stream().map(LemmaDto::getId).toList();
-        List<IndexDto> allIndexes = indexDao.findAllByLemmaIds(existingLemmaIds);
+        allIndexes = indexDao.findAllByLemmaIds(existingLemmaIds);
         List<Integer> allPageIds = allIndexes.stream().map(IndexDto::getPageId).toList();
         List<PageDto> allPages = pageDao.findAllById(allPageIds);
-
-        //filter irrelevant pages
-        List<PageDto> relevantPages = new ArrayList<>(allPages);
-        for (String lemma : queryLemmas) {
-            List<Integer> lemmaIds = lemmaDao.findAllByLemma(List.of(lemma)).stream().map(LemmaDto::getId).toList();
-            List<IndexDto> lemmaIndexes = allIndexes.stream().filter(index -> lemmaIds.contains(index.getLemmaId())).toList();
-            List<Integer> lemmaPageIds = lemmaIndexes.stream().map(IndexDto::getPageId).toList();
-            List<PageDto> lemmaPages = allPages.stream().filter(page -> lemmaPageIds.contains(page.getId())).toList();
+        relevantPages = new ArrayList<>(allPages);
+        for (LemmaDto lemma : existingLemmas) {
+            List<Integer> lemmaIds = lemmaDao.findAllByLemma(List.of(lemma.getLemma()))
+                    .stream().map(LemmaDto::getId).toList();
+            List<IndexDto> lemmaIndexes = allIndexes.stream()
+                    .filter(index -> lemmaIds.contains(index.getLemmaId())).toList();
+            List<Integer> lemmaPageIds = lemmaIndexes.stream()
+                    .map(IndexDto::getPageId).toList();
+            List<PageDto> lemmaPages = allPages.stream()
+                    .filter(page -> lemmaPageIds.contains(page.getId())).toList();
             relevantPages.removeIf(page -> !lemmaPages.contains(page));
         }
+    }
 
-        if (relevantPages.isEmpty()) {
-            log.info("no relevant pages");
-            return blankResponse();
-        }
-
-        //map site ids to sites
-        List<Integer> siteIds = relevantPages.stream().map(PageDto::getSiteId).distinct().toList();
-        Map<Integer, SiteDto> siteIdToSite = siteDao.findAllById(siteIds).stream()
-                .collect(Collectors.toMap(SiteDto::getId, siteDto -> siteDto));
-
-        //get absolute relevance
+    private void getAbsoluteAndMaxRelevance() {
         List<Integer> relevantPageIds = relevantPages.stream().map(PageDto::getId).toList();
         List<IndexDto> relevantIndexes = allIndexes.stream()
                 .filter(index -> relevantPageIds.contains(index.getPageId())).toList();
-        Map<Integer, Double> pageAbsRelevanceMap = relevantIndexes.stream()
+        pageAbsRelevanceMap = relevantIndexes.stream()
                 .collect(Collectors.toMap(IndexDto::getPageId, IndexDto::getRank, Double::sum));
 
-        double maxRelevance = pageAbsRelevanceMap.values().stream().max(Comparator.naturalOrder()).orElseThrow();
+        maxRelevance = pageAbsRelevanceMap.values().stream()
+                .max(Comparator.naturalOrder()).orElseThrow();
+    }
 
-        //set data
+    private List<SearchData> collectSearchData(String query) {
+        List<Integer> siteIds = relevantPages.stream().map(PageDto::getSiteId).distinct().toList();
+        Map<Integer, SiteDto> siteIdToSite = siteDao.findAllById(siteIds).stream()
+                .collect(Collectors.toMap(SiteDto::getId, siteDto -> siteDto));
         List<SearchData> allData = new ArrayList<>();
         relevantPages.forEach(page -> {
             SearchData item = new SearchData();
@@ -113,23 +134,18 @@ public class SearchServiceImpl implements SearchService {
 
             allData.add(item);
         });
+
         allData.sort(Comparator.comparing(SearchData::getRelevance).reversed());
-        int bound = Math.min(offset + limit, relevantPages.size());
-        List<SearchData> responseData = allData.subList(offset, bound);
 
-        SearchResponse response = new SearchResponse();
-        response.setResult(true);
-        response.setCount(relevantPages.size());
-        response.setData(responseData);
-
-        return response;
+        return allData;
     }
 
     private String generateSnippet(String text, String query) {
         StringBuilder snippet = new StringBuilder();
         List<String> matchingWords = findMatchingWords(text, query);
-        String regex = "(?<=[^A-Za-z'А-Яа-яЁё])(" + String.join("|", matchingWords) + ")(?=[^A-Za-z'А-Яа-яЁё])";
-        log.info(regex);
+        String regex = "(?<=[^A-Za-z'А-Яа-яЁё])(" +
+                String.join("|", matchingWords) +
+                ")(?=[^A-Za-z'А-Яа-яЁё])";
         Matcher match = Pattern.compile(regex).matcher(text);
         int range = 80 / matchingWords.size();
         String bOpen = "<b>", bClose = "</b>", dots = "...";
@@ -180,7 +196,7 @@ public class SearchServiceImpl implements SearchService {
             Optional<String> match = lemmas.stream().filter(queryLemmas::contains).findAny();
             if (match.isPresent()) {
                 matchingWords.add(word);
-                log.info(word + " - " + match.get());
+                log.info("{} - {}", word, match.get());
             }
         });
         return new ArrayList<>(matchingWords);
