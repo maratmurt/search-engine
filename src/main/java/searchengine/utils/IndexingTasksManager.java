@@ -28,15 +28,8 @@ public class IndexingTasksManager implements Runnable {
     public void run() {
         long start = System.currentTimeMillis();
 
-        while (!tasks.isEmpty() && running) {
-            for (int i = 0; i < tasks.size(); i++) {
-                ForkJoinTask<Void> task = tasks.get(i);
-                if (task != null && task.isDone()) {
-                    tasks.remove(task);
-                    log.info("Removed completed task. Tasks count = " + tasks.size());
-                }
-            }
-        }
+        while (!tasks.isEmpty() && running)
+            checkAndRemoveCompletedTasks();
 
         pool.shutdown();
 
@@ -45,7 +38,7 @@ public class IndexingTasksManager implements Runnable {
         int minutes = duration.toMinutesPart();
         int seconds = duration.toSecondsPart();
 
-        log.info("FINISHED in " + hours + ":" + minutes + ":" + seconds);
+        log.info("FINISHED in {}:{}:{}", hours, minutes, seconds);
 
         running = false;
     }
@@ -62,14 +55,24 @@ public class IndexingTasksManager implements Runnable {
     public synchronized ForkJoinTask<Void> submitTask(SiteCrawler crawler) {
         ForkJoinTask<Void> task = pool.submit(crawler);
         tasks.add(task);
-        log.info("Task " + crawler.getSite().getUrl() + crawler.getSourcePath() + " submitted. Tasks count = " + tasks.size());
+        log.info("Task {}{} submitted. Tasks count = {}", crawler.getSite().getUrl(), crawler.getSourcePath(), tasks.size());
         return task;
     }
 
     public void initialize() {
         running = true;
         int parallelism = Runtime.getRuntime().availableProcessors() * threadMultiplier;
-        log.info("ForkJoinPool parallelism = " + parallelism);
+        log.info("ForkJoinPool parallelism = {}", parallelism);
         pool = new ForkJoinPool(parallelism);
+    }
+
+    private void checkAndRemoveCompletedTasks() {
+        for (int i = 0; i < tasks.size(); i++) {
+            ForkJoinTask<Void> task = tasks.get(i);
+            if (task != null && task.isDone()) {
+                tasks.remove(task);
+                log.info("Removed completed task. Tasks count = {}", tasks.size());
+            }
+        }
     }
 }
