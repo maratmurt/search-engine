@@ -39,23 +39,28 @@ public class StatisticsServiceImpl implements StatisticsService {
 
         List<DetailedStatisticsItem> detailed = new ArrayList<>();
         List<SiteConfig> sitesList = sites.getSites();
-        for(int i = 0; i < sitesList.size(); i++) {
-            SiteConfig siteConfig = sitesList.get(i);
+        for (SiteConfig siteConfig : sitesList) {
             DetailedStatisticsItem item = new DetailedStatisticsItem();
             item.setName(siteConfig.getName());
             item.setUrl(siteConfig.getUrl());
+            int pages = 0, lemmas = 0;
+            String lastError = "";
+            long statusTime = System.currentTimeMillis();
+
             Optional<SiteDto> existingSite = siteDao.findByUrl(siteConfig.getUrl());
             if (existingSite.isPresent()) {
                 SiteDto site = existingSite.get();
                 int siteId = site.getId();
-                int pages = pageDao.getSitePagesCount(siteId);
-                int lemmas = lemmaDao.getSiteLemmasCount(siteId);
-                item.setPages(pages);
-                item.setLemmas(lemmas);
+                pages = pageDao.getSitePagesCount(siteId);
+                lemmas = lemmaDao.getSiteLemmasCount(siteId);
+                statusTime = site.getStatusTime().getTime();
                 item.setStatus(site.getStatus());
-                item.setError(site.getLastError());
-                item.setStatusTime(site.getStatusTime().getTime());
             }
+
+            item.setStatusTime(statusTime);
+            item.setPages(pages);
+            item.setLemmas(lemmas);
+            item.setError(lastError);
             detailed.add(item);
         }
 
