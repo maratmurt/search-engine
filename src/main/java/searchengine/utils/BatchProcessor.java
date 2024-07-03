@@ -1,6 +1,7 @@
 package searchengine.utils;
 
 import lombok.RequiredArgsConstructor;
+import lombok.Setter;
 import lombok.extern.slf4j.Slf4j;
 import org.springframework.beans.factory.annotation.Value;
 import org.springframework.context.ApplicationContext;
@@ -17,13 +18,14 @@ import java.util.ArrayList;
 import java.util.List;
 
 @Slf4j
+@Setter
 @Component
 @RequiredArgsConstructor
 public class BatchProcessor {
     @Value("${indexing-settings.batch_size}")
     private int batchSize;
 
-    private int pagesOffset = 0;
+    private int pagesOffset;
 
     private final List<PageDto> pages = new ArrayList<>();
     private final ApplicationContext context;

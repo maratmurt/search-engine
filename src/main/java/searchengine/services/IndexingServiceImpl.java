@@ -15,6 +15,7 @@ import searchengine.dto.indexing.IndexingResponse;
 import searchengine.dto.indexing.PageDto;
 import searchengine.dto.indexing.SiteDto;
 import searchengine.model.Status;
+import searchengine.utils.BatchProcessor;
 import searchengine.utils.HtmlParser;
 import searchengine.utils.IndexingTasksManager;
 import searchengine.utils.SiteCrawler;
@@ -40,6 +41,7 @@ public class IndexingServiceImpl implements IndexingService{
     private final IndexingTasksManager tasksManager;
     private final HtmlParser parser;
     private final PageDao pageDao;
+    private final BatchProcessor batch;
 
     @Override
     public ApiResponse startIndexing() {
@@ -47,6 +49,7 @@ public class IndexingServiceImpl implements IndexingService{
             return new ErrorResponse("Индексация уже запущена");
 
         tasksManager.initialize();
+        batch.setPagesOffset(0);
 
         for (SiteConfig siteConfig : sitesList.getSites()) {
             siteDao.findByUrl(siteConfig.getUrl()).ifPresent(siteDao::delete);
