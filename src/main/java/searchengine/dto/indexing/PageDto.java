@@ -4,10 +4,10 @@ import lombok.Data;
 
 @Data
 public class PageDto {
-    private int id;
-    private int siteId;
+    private Integer id;
+    private Integer siteId;
     private String path;
-    private int code;
+    private Integer code;
     private String content;
 
     @Override

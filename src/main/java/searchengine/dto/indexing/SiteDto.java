@@ -6,7 +6,7 @@ import java.sql.Timestamp;
 
 @Data
 public class SiteDto {
-    private int id;
+    private Integer id;
     private String status;
     private String url;
     private String name;
