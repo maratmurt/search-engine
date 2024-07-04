@@ -54,6 +54,7 @@ public class StatisticsServiceImpl implements StatisticsService {
                 pages = pageDao.getSitePagesCount(siteId);
                 lemmas = lemmaDao.getSiteLemmasCount(siteId);
                 statusTime = site.getStatusTime().getTime();
+                lastError = site.getLastError() == null ? "" : site.getLastError();
                 item.setStatus(site.getStatus());
             }
 
