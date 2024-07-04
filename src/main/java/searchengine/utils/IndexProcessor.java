@@ -62,6 +62,7 @@ public class IndexProcessor extends Thread {
                 return index;
             }).toList();
             indexDao.saveAll(indexes);
+            log.info("{} - {} indexed", siteId, page.getPath());
         }
     }
 }

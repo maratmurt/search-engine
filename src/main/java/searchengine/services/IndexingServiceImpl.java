@@ -15,16 +15,14 @@ import searchengine.dto.indexing.IndexingResponse;
 import searchengine.dto.indexing.PageDto;
 import searchengine.dto.indexing.SiteDto;
 import searchengine.model.Status;
-import searchengine.utils.BatchProcessor;
-import searchengine.utils.HtmlParser;
-import searchengine.utils.IndexingTasksManager;
-import searchengine.utils.SiteCrawler;
+import searchengine.utils.*;
 
 import java.net.URLDecoder;
 import java.nio.charset.StandardCharsets;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.HashSet;
+import java.util.List;
 import java.util.Optional;
 import java.util.Set;
 import java.util.regex.Matcher;
@@ -122,7 +120,11 @@ public class IndexingServiceImpl implements IndexingService{
         page.setPath(path);
         page.setCode(pageResponse.getStatusCodeValue());
         page.setContent(pageResponse.getBody());
-        pageDao.save(page);
+        page = pageDao.save(page);
+
+        IndexProcessor indexProcessor = context.getBean(IndexProcessor.class);
+        indexProcessor.setPages(List.of(page));
+        indexProcessor.start();
 
         IndexingResponse response = new IndexingResponse();
         response.setResult(true);
