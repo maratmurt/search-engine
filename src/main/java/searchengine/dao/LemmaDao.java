@@ -79,4 +79,9 @@ public class LemmaDao {
 
         return connection.query(sql, rowMapper);
     }
+
+    public void deleteBySiteId(int siteId) {
+        String sql = "DELETE FROM lemma WHERE site_id=" + siteId;
+        connection.update(sql);
+    }
 }

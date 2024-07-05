@@ -7,6 +7,8 @@ import org.springframework.http.ResponseEntity;
 import org.springframework.stereotype.Service;
 import searchengine.config.SiteConfig;
 import searchengine.config.SitesList;
+import searchengine.dao.IndexDao;
+import searchengine.dao.LemmaDao;
 import searchengine.dao.PageDao;
 import searchengine.dao.SiteDao;
 import searchengine.dto.ApiResponse;
@@ -40,6 +42,8 @@ public class IndexingServiceImpl implements IndexingService{
     private final HtmlParser parser;
     private final PageDao pageDao;
     private final BatchProcessor batch;
+    private final IndexDao indexDao;
+    private final LemmaDao lemmaDao;
 
     @Override
     public ApiResponse startIndexing() {
@@ -107,7 +111,11 @@ public class IndexingServiceImpl implements IndexingService{
 
         int siteId = site.getId();
         String path = url.substring(rootUrl.length());
-        pageDao.findBySiteIdAndPath(siteId, path).ifPresent(pageDao::delete);
+        pageDao.findBySiteIdAndPath(siteId, path).ifPresent(page -> {
+            indexDao.deleteAllByPageId(List.of(page.getId()));
+            lemmaDao.deleteBySiteId(page.getSiteId());
+            pageDao.delete(page);
+        });
 
         ResponseEntity<String> pageResponse;
         try {

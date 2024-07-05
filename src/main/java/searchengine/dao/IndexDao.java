@@ -44,4 +44,12 @@ public class IndexDao {
         String idsString = lemmaIds.stream().map(String::valueOf).collect(Collectors.joining(", "));
         return connection.query("SELECT * FROM search_engine.index WHERE lemma_id IN (" + idsString + ")", rowMapper);
     }
+
+    public void deleteAllByPageId(List<Integer> pageIds) {
+        String idsString = pageIds.stream()
+                .map(String::valueOf)
+                .collect(Collectors.joining(", "));
+        String sql = "DELETE FROM search_engine.index WHERE page_id IN(" + idsString + ")";
+        connection.update(sql);
+    }
 }
