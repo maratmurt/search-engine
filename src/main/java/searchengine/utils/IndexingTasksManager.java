@@ -17,7 +17,7 @@ import java.util.concurrent.ForkJoinTask;
 @Setter
 @Component
 public class IndexingTasksManager implements Runnable {
-    private boolean running = false;
+    private volatile boolean running = false;
     private List<ForkJoinTask<Void>> tasks = new ArrayList<>();
     private ForkJoinPool pool;
 

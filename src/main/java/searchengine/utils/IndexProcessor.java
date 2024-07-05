@@ -26,10 +26,13 @@ public class IndexProcessor extends Thread {
     private final HtmlParser parser;
     private final LemmaDao lemmaDao;
     private final IndexDao indexDao;
+    private final IndexingTasksManager tasksManager;
 
     @Override
     public void run() {
-        for (PageDto page : pages) {
+        int i = 0;
+        while (tasksManager.isRunning()) {
+            PageDto page = pages.get(i);
             int siteId = page.getSiteId();
             String text = parser.getText(page.getContent());
             Map<String, Double> lemmaRankMap = lemmatizer.buildLemmaRankMap(text);
@@ -61,6 +64,9 @@ public class IndexProcessor extends Thread {
                 return index;
             }).toList();
             indexDao.saveAll(indexes);
+
+            i++;
+
             log.info("{} - {} indexed", siteId, page.getPath());
         }
     }
