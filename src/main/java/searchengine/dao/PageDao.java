@@ -100,4 +100,15 @@ public class PageDao {
         String sql = "SELECT * FROM page WHERE id IN (" + idsString + ")";
         return connection.query(sql, rowMapper);
     }
+
+    public List<PageDto> findBySiteId(int siteId) {
+        String sql = "SELECT * FROM page WHERE site_id=" + siteId;
+        return connection.query(sql, rowMapper);
+    }
+
+    public void deleteAllById(List<Integer> pageIds) {
+        String idsString = pageIds.stream().map(String::valueOf).collect(Collectors.joining(", "));
+        String sql = "DELETE FROM page WHERE id IN(" + idsString + ")";
+        connection.update(sql);
+    }
 }

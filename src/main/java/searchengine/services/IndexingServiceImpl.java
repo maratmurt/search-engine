@@ -54,7 +54,7 @@ public class IndexingServiceImpl implements IndexingService{
         batch.setPagesOffset(0);
 
         for (SiteConfig siteConfig : sitesList.getSites()) {
-            siteDao.findByUrl(siteConfig.getUrl()).ifPresent(siteDao::delete);
+            siteDao.findByUrl(siteConfig.getUrl()).ifPresent(site -> deleteAllSiteData(site.getId()));
 
             SiteDto site = new SiteDto();
 
@@ -137,6 +137,14 @@ public class IndexingServiceImpl implements IndexingService{
         IndexingResponse response = new IndexingResponse();
         response.setResult(true);
         return response;
+    }
+
+    private void deleteAllSiteData(int siteId) {
+        List<PageDto> pages = pageDao.findBySiteId(siteId);
+        List<Integer> pageIds = pages.stream().map(PageDto::getId).toList();
+        indexDao.deleteAllByPageId(pageIds);
+        lemmaDao.deleteBySiteId(siteId);
+        pageDao.deleteAllById(pageIds);
     }
 
     private SiteConfig findMatchingConfig(String url) {
