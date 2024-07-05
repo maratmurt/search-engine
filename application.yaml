@@ -1,7 +1,7 @@
 indexing-settings:
   sites:
-    - url: https://dimonvideo.ru
-      name: Dimonvideo
+    - url: https://et-cetera.ru
+      name: EtCetera
     - url: http://www.playback.ru
       name: Playback
     - url: https://www.svetlovka.ru
@@ -13,7 +13,7 @@ indexing-settings:
     - Inquisit
     - TruSearch
     - QuickQuery
-  batch_size: 1000
+  batch_size: 100
   thread_multiplier: 4
 
 server:
