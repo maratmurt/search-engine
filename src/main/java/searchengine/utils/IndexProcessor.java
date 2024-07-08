@@ -23,6 +23,7 @@ import java.util.Map;
 @RequiredArgsConstructor
 public class IndexProcessor extends Thread {
     private List<PageDto> pages;
+    private Map<String, Integer> lemmaFrequencyMap = new HashMap<>();
 
     private final Lemmatizer lemmatizer;
     private final HtmlParser parser;
@@ -32,7 +33,6 @@ public class IndexProcessor extends Thread {
 
     @Override
     public void run() {
-        Map<String, Integer> lemmaFrequencyMap = new HashMap<>();
         Map<Integer, Map<String, Double>> pageIdToLemmaRankMap = new HashMap<>();
         pages.forEach(page -> {
             String text = parser.getText(page.getContent());
@@ -48,9 +48,36 @@ public class IndexProcessor extends Thread {
             });
         });
         int siteId = pages.get(0).getSiteId();
+
+        updateAndCreateLemmas(siteId);
+
+        int i = 0;
+        while (tasksManager.isRunning() && i < pages.size()) {
+            PageDto page = pages.get(i);
+            Map<String, Double> lemmaRankMap = pageIdToLemmaRankMap.get(page.getId());
+            List<String> pageLemmas = lemmaRankMap.keySet().stream().toList();
+            List<IndexDto> indexes = lemmaDao.findAllByLemmaAndSiteId(pageLemmas, siteId).stream().map(lemma -> {
+                IndexDto index = new IndexDto();
+                index.setPageId(page.getId());
+                index.setLemmaId(lemma.getId());
+                index.setRank(lemmaRankMap.get(lemma.getLemma()));
+                return index;
+            }).toList();
+            indexDao.saveAll(indexes);
+            i++;
+
+            log.info("{} - {} INDEXED {}/{}", siteId, page.getPath(), i, pages.size());
+        }
+    }
+
+    private void updateAndCreateLemmas(int siteId) {
         List<String> lemmas = lemmaFrequencyMap.keySet().stream().toList();
 
         synchronized (lemmaDao) {
+            if (!tasksManager.isRunning()) {
+                return;
+            }
+
             long start = System.currentTimeMillis();
 
             List<LemmaDto> existingLemmas = lemmaDao.findAllByLemmaAndSiteId(lemmas, siteId);
@@ -76,24 +103,6 @@ public class IndexProcessor extends Thread {
             int minutes = duration.toMinutesPart();
             int seconds = duration.toSecondsPart();
             log.info("LEMMAS update time {}:{}", minutes, seconds);
-        }
-
-        int i = 0;
-        while (tasksManager.isRunning() && i < pages.size()) {
-            PageDto page = pages.get(i);
-            Map<String, Double> lemmaRankMap = pageIdToLemmaRankMap.get(page.getId());
-            List<String> pageLemmas = lemmaRankMap.keySet().stream().toList();
-            List<IndexDto> indexes = lemmaDao.findAllByLemmaAndSiteId(pageLemmas, siteId).stream().map(lemma -> {
-                IndexDto index = new IndexDto();
-                index.setPageId(page.getId());
-                index.setLemmaId(lemma.getId());
-                index.setRank(lemmaRankMap.get(lemma.getLemma()));
-                return index;
-            }).toList();
-            indexDao.saveAll(indexes);
-            i++;
-
-            log.info("{} - {} INDEXED", siteId, page.getPath());
         }
     }
 }

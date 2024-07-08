@@ -45,10 +45,7 @@ public class IndexingTasksManager implements Runnable {
 
     public void abort() {
         running = false;
-
-        tasks.forEach(task -> task.cancel(true));
         tasks.clear();
-
         pool.shutdownNow();
     }
 
