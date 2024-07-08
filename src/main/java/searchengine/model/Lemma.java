@@ -9,7 +9,9 @@ import javax.persistence.Index;
 
 @Data
 @Entity
-@Table(name = "lemma", indexes = @Index(columnList = "lemma"))
+@Table(name = "lemma", indexes = @Index(columnList = "lemma"), uniqueConstraints = {
+        @UniqueConstraint(columnNames = {"lemma", "site_id"})
+})
 public class Lemma {
     @Id
     @Column(name = "id")
