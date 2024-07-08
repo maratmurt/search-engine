@@ -41,7 +41,7 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
     public ApiResponse search(String query, String site, int offset, int limit) {
-        if (query.isEmpty()) {
+        if (query.isBlank()) {
             return new ErrorResponse("Задан пустой поисковый запрос");
         }
 
