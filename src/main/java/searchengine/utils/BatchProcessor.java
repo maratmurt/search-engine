@@ -15,7 +15,9 @@ import searchengine.model.Status;
 import java.sql.Timestamp;
 import java.time.LocalDateTime;
 import java.util.ArrayList;
+import java.util.HashMap;
 import java.util.List;
+import java.util.Map;
 
 @Slf4j
 @Setter
@@ -53,9 +55,23 @@ public class BatchProcessor {
 
         List<PageDto> fetchedPages = pageDao.fetch(pagesCount, pagesOffset);
 
-        IndexProcessor indexProcessor = context.getBean(IndexProcessor.class);
-        indexProcessor.setPages(fetchedPages);
-        indexProcessor.start();
+        Map<Integer, List<PageDto>> siteIdToPages = new HashMap<>();
+        fetchedPages.forEach(page -> {
+            int siteId = page.getSiteId();
+            if (!siteIdToPages.containsKey(siteId)) {
+                siteIdToPages.put(siteId, new ArrayList<>());
+            }
+            List<PageDto> sitePages = siteIdToPages.get(siteId);
+            sitePages.add(page);
+        });
+
+        List<Integer> siteIds = siteIdToPages.keySet().stream().toList();
+        siteIds.forEach(siteId -> {
+            IndexProcessor indexProcessor = context.getBean(IndexProcessor.class);
+            List<PageDto> sitePages = siteIdToPages.get(siteId);
+            indexProcessor.setPages(sitePages);
+            indexProcessor.start();
+        });
 
         pagesOffset += pagesCount;
 

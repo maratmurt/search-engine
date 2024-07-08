@@ -11,6 +11,8 @@ import searchengine.dto.indexing.IndexDto;
 import searchengine.dto.indexing.LemmaDto;
 import searchengine.dto.indexing.PageDto;
 
+import java.time.Duration;
+import java.util.HashMap;
 import java.util.List;
 import java.util.Map;
 
@@ -30,32 +32,58 @@ public class IndexProcessor extends Thread {
 
     @Override
     public void run() {
-        int i = 0;
-        while (tasksManager.isRunning()) {
-            PageDto page = pages.get(i);
-            int siteId = page.getSiteId();
+        Map<String, Integer> lemmaFrequencyMap = new HashMap<>();
+        Map<Integer, Map<String, Double>> pageIdToLemmaRankMap = new HashMap<>();
+        pages.forEach(page -> {
             String text = parser.getText(page.getContent());
             Map<String, Double> lemmaRankMap = lemmatizer.buildLemmaRankMap(text);
+            pageIdToLemmaRankMap.put(page.getId(), lemmaRankMap);
             List<String> lemmas = lemmaRankMap.keySet().stream().toList();
+            lemmas.forEach(lemma -> {
+                int frequency = 1;
+                if (lemmaFrequencyMap.containsKey(lemma)) {
+                    frequency += lemmaFrequencyMap.get(lemma);
+                }
+                lemmaFrequencyMap.put(lemma, frequency);
+            });
+        });
+        int siteId = pages.get(0).getSiteId();
+        List<String> lemmas = lemmaFrequencyMap.keySet().stream().toList();
 
-            synchronized (lemmaDao) {
-                List<LemmaDto> existingLemmas = lemmaDao.findAllByLemmaAndSiteId(lemmas, siteId);
-                existingLemmas.forEach(lemma -> lemma.setFrequency(lemma.getFrequency() + 1));
-                lemmaDao.updateAll(existingLemmas);
+        synchronized (lemmaDao) {
+            long start = System.currentTimeMillis();
 
-                List<String> existingLemmaWords = existingLemmas.stream().map(LemmaDto::getLemma).toList();
-                List<LemmaDto> newLemmas = lemmas.stream()
-                        .filter(lemma -> !existingLemmaWords.contains(lemma))
-                        .map(lemma -> {
-                            LemmaDto lemmaDto = new LemmaDto();
-                            lemmaDto.setLemma(lemma);
-                            lemmaDto.setSiteId(siteId);
-                            lemmaDto.setFrequency(1);
-                            return lemmaDto;
-                        }).toList();
-                lemmaDao.saveAll(newLemmas);
-            }
+            List<LemmaDto> existingLemmas = lemmaDao.findAllByLemmaAndSiteId(lemmas, siteId);
+            existingLemmas.forEach(lemma -> {
+                int frequency = lemmaFrequencyMap.get(lemma.getLemma());
+                lemma.setFrequency(frequency);
+            });
+            lemmaDao.updateAll(existingLemmas);
 
+            List<String> existingLemmaWords = existingLemmas.stream().map(LemmaDto::getLemma).toList();
+            List<LemmaDto> newLemmas = lemmas.stream()
+                    .filter(lemma -> !existingLemmaWords.contains(lemma))
+                    .map(lemma -> {
+                        LemmaDto lemmaDto = new LemmaDto();
+                        lemmaDto.setLemma(lemma);
+                        lemmaDto.setSiteId(siteId);
+                        lemmaDto.setFrequency(1);
+                        return lemmaDto;
+                    }).toList();
+            lemmaDao.saveAll(newLemmas);
+
+            Duration duration = Duration.ofMillis(System.currentTimeMillis() - start);
+            int minutes = duration.toMinutesPart();
+            int seconds = duration.toSecondsPart();
+            log.info("LEMMAS update time {}:{}", minutes, seconds);
+        }
+
+        int i = 0;
+        while (tasksManager.isRunning()) {
+            long start = System.currentTimeMillis();
+
+            PageDto page = pages.get(i);
+            Map<String, Double> lemmaRankMap = pageIdToLemmaRankMap.get(page.getId());
             List<IndexDto> indexes = lemmaDao.findAllByLemmaAndSiteId(lemmas, siteId).stream().map(lemma -> {
                 IndexDto index = new IndexDto();
                 index.setPageId(page.getId());
@@ -64,10 +92,12 @@ public class IndexProcessor extends Thread {
                 return index;
             }).toList();
             indexDao.saveAll(indexes);
-
             i++;
 
-            log.info("{} - {} indexed", siteId, page.getPath());
+            Duration duration = Duration.ofMillis(System.currentTimeMillis() - start);
+            int minutes = duration.toMinutesPart();
+            int seconds = duration.toSecondsPart();
+            log.info("{} - {} INDEXED in {}:{}", siteId, page.getPath(), minutes, seconds);
         }
     }
 }
