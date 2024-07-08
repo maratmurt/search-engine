@@ -80,8 +80,6 @@ public class IndexProcessor extends Thread {
 
         int i = 0;
         while (tasksManager.isRunning() && i < pages.size()) {
-            long start = System.currentTimeMillis();
-
             PageDto page = pages.get(i);
             Map<String, Double> lemmaRankMap = pageIdToLemmaRankMap.get(page.getId());
             List<String> pageLemmas = lemmaRankMap.keySet().stream().toList();
@@ -95,10 +93,7 @@ public class IndexProcessor extends Thread {
             indexDao.saveAll(indexes);
             i++;
 
-            Duration duration = Duration.ofMillis(System.currentTimeMillis() - start);
-            int minutes = duration.toMinutesPart();
-            int seconds = duration.toSecondsPart();
-            log.info("{} - {} INDEXED in {}:{}", siteId, page.getPath(), minutes, seconds);
+            log.info("{} - {} INDEXED", siteId, page.getPath());
         }
     }
 }
