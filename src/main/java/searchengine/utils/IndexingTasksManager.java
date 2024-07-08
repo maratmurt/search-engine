@@ -71,7 +71,6 @@ public class IndexingTasksManager implements Runnable {
             ForkJoinTask<Void> task = tasks.get(i);
             if (task != null && task.isDone()) {
                 tasks.remove(task);
-                log.info("Removed completed task. Tasks count = {}", tasks.size());
             }
         }
     }

@@ -24,7 +24,6 @@ public class HtmlParser {
         Thread.sleep(1000);
         List<String> agents = agentsList.getAgents();
         String agent = agents.get(random.nextInt(agents.size()));
-        log.info("Connecting to " + url);
         Connection.Response response = Jsoup.connect(url)
                 .userAgent(agent)
                 .referrer("http://www.google.com")

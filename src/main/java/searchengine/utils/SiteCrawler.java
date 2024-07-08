@@ -64,7 +64,6 @@ public class SiteCrawler extends RecursiveAction {
         List<ForkJoinTask<Void>> tasks = new ArrayList<>();
 
         for (String path : newPaths) {
-            log.info(site.getName() + " " + path);
             SiteCrawler crawler = context.getBean(SiteCrawler.class);
             crawler.setSite(site);
             crawler.setSourcePath(path);
