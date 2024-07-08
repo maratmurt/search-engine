@@ -41,28 +41,31 @@ public class SearchServiceImpl implements SearchService {
 
     @Override
     public ApiResponse search(String query, String site, int offset, int limit) {
-        if (query.isEmpty())
+        if (query.isEmpty()) {
             return new ErrorResponse("Задан пустой поисковый запрос");
+        }
 
         List<String> queryLemmas = lemmatizer.buildLemmaRankMap(query).keySet().stream().toList();
 
         Optional<String> noMatchLemma = queryLemmas.stream()
                 .filter(lemma -> lemmaDao.findAllByLemma(List.of(lemma)).isEmpty()).findAny();
-        if (noMatchLemma.isPresent())
-            return blankResponse();
+        if (noMatchLemma.isPresent()) {
+            return emptyResponse();
+        }
 
         existingLemmas = lemmaDao.findAllByLemma(queryLemmas);
-
         if (site != null) {
             int requestSiteId = siteDao.findByUrl(site).orElseThrow().getId();
             existingLemmas.removeIf(lemma -> lemma.getSiteId() != requestSiteId);
-            if (existingLemmas.isEmpty()) return blankResponse();
+        }
+        if (existingLemmas.isEmpty()) {
+            return emptyResponse();
         }
 
         filterIrrelevantPages();
-
-        if (relevantPages.isEmpty())
-            return blankResponse();
+        if (relevantPages.isEmpty()) {
+            return emptyResponse();
+        }
 
         getAbsoluteAndMaxRelevance();
 
@@ -112,6 +115,7 @@ public class SearchServiceImpl implements SearchService {
         List<Integer> siteIds = relevantPages.stream().map(PageDto::getSiteId).distinct().toList();
         Map<Integer, SiteDto> siteIdToSite = siteDao.findAllById(siteIds).stream()
                 .collect(Collectors.toMap(SiteDto::getId, siteDto -> siteDto));
+
         List<SearchData> allData = new ArrayList<>();
         relevantPages.forEach(page -> {
             SearchData item = new SearchData();
@@ -122,19 +126,16 @@ public class SearchServiceImpl implements SearchService {
             item.setUri(page.getPath());
             item.setTitle(parser.getTitle(page.getContent()));
 
-            //set relative relevance
             double absRelevance = pageAbsRelevanceMap.get(page.getId());
             double relativeRelevance = absRelevance / maxRelevance;
             item.setRelevance(relativeRelevance);
 
-            //set snippet
             String text = parser.getText(page.getContent());
             String snippet = generateSnippet(text, query);
             item.setSnippet(snippet);
 
             allData.add(item);
         });
-
         allData.sort(Comparator.comparing(SearchData::getRelevance).reversed());
 
         return allData;
@@ -184,6 +185,7 @@ public class SearchServiceImpl implements SearchService {
         } else {
             snippet.append(text, lastMatchEnd, text.length());
         }
+
         return snippet.toString();
     }
 
@@ -202,7 +204,7 @@ public class SearchServiceImpl implements SearchService {
         return new ArrayList<>(matchingWords);
     }
 
-    private SearchResponse blankResponse() {
+    private SearchResponse emptyResponse() {
         SearchResponse response = new SearchResponse();
         response.setResult(true);
         response.setCount(0);

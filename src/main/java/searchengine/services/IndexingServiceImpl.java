@@ -47,8 +47,9 @@ public class IndexingServiceImpl implements IndexingService{
 
     @Override
     public ApiResponse startIndexing() {
-        if (tasksManager.isRunning())
+        if (tasksManager.isRunning()) {
             return new ErrorResponse("Индексация уже запущена");
+        }
 
         tasksManager.initialize();
         batch.setPagesOffset(0);
@@ -57,7 +58,6 @@ public class IndexingServiceImpl implements IndexingService{
             siteDao.findByUrl(siteConfig.getUrl()).ifPresent(site -> deleteAllSiteData(site.getId()));
 
             SiteDto site = new SiteDto();
-
             site.setName(siteConfig.getName());
             site.setUrl(siteConfig.getUrl());
             site.setStatus(Status.INDEXING.toString());
@@ -82,8 +82,9 @@ public class IndexingServiceImpl implements IndexingService{
 
     @Override
     public ApiResponse stopIndexing() {
-        if (!tasksManager.isRunning())
+        if (!tasksManager.isRunning()) {
             return new ErrorResponse("Индексация не запущена");
+        }
 
         tasksManager.abort();
 
@@ -98,14 +99,17 @@ public class IndexingServiceImpl implements IndexingService{
 
         Matcher rootMatch = Pattern.compile("http(s?)://[\\w-.]+").matcher(url);
         String rootUrl;
-        if (rootMatch.find())
+        if (rootMatch.find()) {
             rootUrl = rootMatch.group();
-        else
+        } else {
             return new ErrorResponse("Введён некорректный адрес страницы");
+        }
 
         SiteConfig matchSiteConfig = findMatchingConfig(url);
-        if (matchSiteConfig == null)
-            return new ErrorResponse("Данная страница находится за пределами сайтов, указанных в конфигурационном файле");
+        if (matchSiteConfig == null) {
+            return new ErrorResponse("Данная страница находится за пределами сайтов, " +
+                    "указанных в конфигурационном файле");
+        }
 
         SiteDto site = findOrCreateSite(matchSiteConfig.getName(), matchSiteConfig.getUrl());
 
