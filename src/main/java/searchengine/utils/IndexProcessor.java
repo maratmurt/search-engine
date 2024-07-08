@@ -38,8 +38,8 @@ public class IndexProcessor extends Thread {
             String text = parser.getText(page.getContent());
             Map<String, Double> lemmaRankMap = lemmatizer.buildLemmaRankMap(text);
             pageIdToLemmaRankMap.put(page.getId(), lemmaRankMap);
-            List<String> lemmas = lemmaRankMap.keySet().stream().toList();
-            lemmas.forEach(lemma -> {
+            List<String> pageLemmas = lemmaRankMap.keySet().stream().toList();
+            pageLemmas.forEach(lemma -> {
                 int frequency = 1;
                 if (lemmaFrequencyMap.containsKey(lemma)) {
                     frequency += lemmaFrequencyMap.get(lemma);
@@ -55,7 +55,7 @@ public class IndexProcessor extends Thread {
 
             List<LemmaDto> existingLemmas = lemmaDao.findAllByLemmaAndSiteId(lemmas, siteId);
             existingLemmas.forEach(lemma -> {
-                int frequency = lemmaFrequencyMap.get(lemma.getLemma());
+                int frequency = lemma.getFrequency() + lemmaFrequencyMap.get(lemma.getLemma());
                 lemma.setFrequency(frequency);
             });
             lemmaDao.updateAll(existingLemmas);
@@ -79,12 +79,13 @@ public class IndexProcessor extends Thread {
         }
 
         int i = 0;
-        while (tasksManager.isRunning()) {
+        while (tasksManager.isRunning() && i < pages.size()) {
             long start = System.currentTimeMillis();
 
             PageDto page = pages.get(i);
             Map<String, Double> lemmaRankMap = pageIdToLemmaRankMap.get(page.getId());
-            List<IndexDto> indexes = lemmaDao.findAllByLemmaAndSiteId(lemmas, siteId).stream().map(lemma -> {
+            List<String> pageLemmas = lemmaRankMap.keySet().stream().toList();
+            List<IndexDto> indexes = lemmaDao.findAllByLemmaAndSiteId(pageLemmas, siteId).stream().map(lemma -> {
                 IndexDto index = new IndexDto();
                 index.setPageId(page.getId());
                 index.setLemmaId(lemma.getId());
