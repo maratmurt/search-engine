@@ -39,8 +39,6 @@ public class IndexingTasksManager implements Runnable {
         int seconds = duration.toSecondsPart();
 
         log.info("FINISHED in {}:{}:{}", hours, minutes, seconds);
-
-        running = false;
     }
 
     public void abort() {
